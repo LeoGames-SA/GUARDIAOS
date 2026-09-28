@@ -87,10 +87,10 @@ export const LAYOUTS: Record<'single' | 'dual', Partial<Record<SlotId, Placement
   },
   dual: {
     ...common,
-    monitor: { art: 'monitor', x: 830, y: 176, w: 660, z: 32 },
-    monitor2: { art: 'monitor', x: 1410, y: 262, w: 330, z: 31 },
-    keyboard: { art: 'keyboard', x: 930, y: 690, w: 500, z: 46 },
-    mouse: { art: 'mouse', x: 1450, y: 716, w: 100, z: 47 },
+    monitor: { art: 'monitor', x: 792, y: 190, w: 606, z: 32 },
+    monitor2: { art: 'monitor', x: 1392, y: 318, w: 276, z: 31 },
+    keyboard: { art: 'keyboard', x: 862, y: 688, w: 480, z: 46 },
+    mouse: { art: 'mouse', x: 1372, y: 716, w: 96, z: 47 },
   },
 };
 

@@ -246,7 +246,7 @@ function Window({
   // Mantener dentro del área útil: la barra de título siempre alcanzable.
   const w = Math.min(win.w, bounds.w - 8);
   const h = Math.min(win.h, bounds.h - 8);
-  const clampX = (x: number) => Math.max(0, Math.min(x, bounds.w - Math.min(w, 160)));
+  const clampX = (x: number) => Math.max(0, Math.min(x, bounds.w - w));
   const clampY = (y: number) => Math.max(0, Math.min(y, bounds.h - 40));
   const x = clampX(win.x);
   const y = clampY(win.y);

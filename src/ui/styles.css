@@ -2360,8 +2360,12 @@ details > summary {
   .win-title {
     cursor: default;
   }
-  .app-split {
+  .app-split,
+  .app.app-split {
     flex-direction: column;
+  }
+  .hud-cases .muted {
+    display: none;
   }
   .app-col {
     width: 100%;
@@ -2401,4 +2405,34 @@ details > summary {
   background: #3a4448;
   color: #a9b4b6;
   border-color: #56656a;
+}
+
+.call-expand {
+  display: none;
+  margin-left: auto;
+}
+@media (max-width: 760px), (max-height: 520px) and (max-width: 1000px) {
+  .call.collapsed {
+    top: auto;
+    bottom: 0;
+    height: auto;
+    z-index: 600;
+    border-top: 1px solid #3c6878;
+  }
+  .call.collapsed > :not(.call-head) {
+    display: none;
+  }
+  .call.collapsed .call-expand {
+    display: inline-flex;
+  }
+  .desk.in-call .overlay {
+    bottom: 76px;
+  }
+  .call.collapsed .call-head {
+    height: 76px;
+    padding: 8px 12px;
+  }
+  .call.collapsed .call-head small {
+    display: none;
+  }
 }

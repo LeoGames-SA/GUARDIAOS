@@ -70,7 +70,15 @@ function useReveal(lines: CallLine[], key: string, animate: boolean) {
   return { shown, chars, typing: text !== undefined, complete };
 }
 
-export function CallPanel({ game }: { game: GameState }) {
+export function CallPanel({
+  game,
+  collapsed,
+  onExpand,
+}: {
+  game: GameState;
+  collapsed?: boolean;
+  onExpand?: () => void;
+}) {
   const store = useStore();
   const { prefs } = useAppState();
   const call = game.call!;
@@ -114,7 +122,7 @@ export function CallPanel({ game }: { game: GameState }) {
 
   return (
     <aside
-      className="call"
+      className={`call ${collapsed ? 'collapsed' : ''}`}
       ref={panelRef}
       aria-label={`Llamada con ${name}`}
       onClick={() => typing && complete()}
@@ -127,6 +135,11 @@ export function CallPanel({ game }: { game: GameState }) {
             {cs.contactKnown ? `${def.contact.role} · ` : ''}Expediente {def.number}
           </small>
         </div>
+        {collapsed && (
+          <button type="button" className="btn btn-sm call-expand" onClick={onExpand}>
+            Volver a la llamada
+          </button>
+        )}
       </header>
       <ol className="call-log" ref={logRef} aria-live="polite" aria-relevant="additions">
         {call.lines.slice(0, shown + (typing ? 1 : 0)).map((l, i) => {

@@ -101,7 +101,7 @@ export function Desk() {
   const close = useCallback(() => {
     setPanel(null);
     const el = opener.current;
-    if (el && document.contains(el)) requestAnimationFrame(() => el.focus());
+    if (el && document.contains(el)) el.focus();
   }, []);
 
   // Eventos del motor → avisos, sonido y región aria-live (una vez por evento, nunca por cuadro).
@@ -323,7 +323,7 @@ export function Desk() {
         </button>
       </header>
 
-      {inCall && <CallPanel game={game} />}
+      {inCall && <CallPanel game={game} collapsed={Boolean(panel)} onExpand={close} />}
 
       {panel && <div className="scrim" onClick={close} />}
       {panel && (

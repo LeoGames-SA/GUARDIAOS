@@ -121,7 +121,6 @@ function MiniScreen({ game, second }: { game: GameState | null; second?: boolean
         <div className="mini-body">
           <b>Monitor 2</b>
           <span>Correo · Historial</span>
-          <span>{game?.history.length ?? 0} registros</span>
         </div>
       ) : (
         <div className="mini-body">
