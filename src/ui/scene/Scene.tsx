@@ -42,6 +42,8 @@ interface Props {
   holding?: SlotId[];
   /** Fase de la animación de la pose de café (sólo visual). */
   poseClass?: string;
+  /** Escena de ambiente (menú): pantalla en reposo, sin datos de la partida. */
+  ambient?: boolean;
 }
 
 export function pos(p: {
@@ -136,6 +138,16 @@ function Decor({ slot, className }: { slot: Placement; className?: string }) {
   );
 }
 
+/** Pantalla en reposo para el menú: nada de expedientes ni aplicaciones. */
+function Screensaver() {
+  return (
+    <div className="mini saver" aria-hidden="true">
+      <span className="saver-logo">GuardiaOS</span>
+      <span className="saver-sub">Mesa de ayuda · Mutual Sur</span>
+    </div>
+  );
+}
+
 function MiniScreen({ game, second }: { game: GameState | null; second?: boolean }) {
   const focus = game?.focusId ? game.cases[game.focusId] : null;
   const def = focus ? CONTENT.cases[focus.id] : null;
@@ -210,6 +222,7 @@ export const Scene = memo(function Scene({
   inert,
   holding,
   poseClass,
+  ambient,
 }: Props) {
   const L = LAYOUTS[dual ? 'dual' : 'single'];
   const ringing = Boolean(game?.incoming);
@@ -265,7 +278,7 @@ export const Scene = memo(function Scene({
         style={{ ...screenRect(s('monitor')), height: screenH(s('monitor')) }}
         aria-hidden="true"
       >
-        <MiniScreen game={game} />
+        {ambient ? <Screensaver /> : <MiniScreen game={game} />}
       </div>
       {dual && L.monitor2 && (
         <>
@@ -282,7 +295,7 @@ export const Scene = memo(function Scene({
             style={{ ...screenRect(L.monitor2), height: screenH(L.monitor2) }}
             aria-hidden="true"
           >
-            <MiniScreen game={game} second />
+            {ambient ? <Screensaver /> : <MiniScreen game={game} second />}
           </div>
         </>
       )}
@@ -311,7 +324,9 @@ export const Scene = memo(function Scene({
                   : 'EN LÍNEA'
                 : game
                   ? clock(game.minute)
-                  : ''
+                  : ambient
+                    ? 'SOPORTE'
+                    : ''
           }
           alert={ringing}
         />

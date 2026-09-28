@@ -235,3 +235,41 @@ test('la llamada no mueve la mesa: atender, contraer, espera, retomar y cortar',
   await expect(call).toHaveCount(0);
   expect(await boxes()).toEqual(before);
 });
+
+test('pizarra vacía sobre corcho con acceso a archivados; menú sin avanzar la guardia', async ({ page }) => {
+  await fresh(page);
+  await startGuard(page, 1);
+  await page.getByRole('button', { name: 'Pizarra de pruebas' }).click();
+  await expect(page.locator('.corkframe')).toBeVisible();
+  await expect(page.locator('.empty-note')).toContainText('Sin expediente activo');
+  await expect(page.locator('.note')).toHaveCount(0); // no se inventan pruebas
+  await page.keyboard.press('Escape');
+  // Resolver 001 y verlo archivado en la pizarra, en sólo lectura.
+  await page.evaluate(() => {
+    const t = (window as unknown as { __tdg: { dispatch: (a: unknown) => void } }).__tdg;
+    t.dispatch({ type: 'answerCall' });
+    for (const id of ['t-queue', 'i-cancel-job', 'v-retry'])
+      t.dispatch({ type: 'probe', caseId: 'c001', probeId: id });
+    t.dispatch({ type: 'close', caseId: 'c001' });
+    t.dispatch({ type: 'hangUp' });
+  });
+  await page
+    .getByRole('dialog', { name: 'Informe del expediente' })
+    .getByRole('button', { name: /Cerrar/ })
+    .click();
+  await page.getByRole('button', { name: 'Pizarra de pruebas' }).click();
+  await page.locator('.arch-note').getByRole('button', { name: /#001/ }).click();
+  await expect(page.locator('.board-panel h2')).toContainText('archivado');
+  const notes = await page.locator('.note').count();
+  expect(notes).toBeGreaterThan(0);
+  await expect(page.locator('.note').first()).toHaveAttribute('aria-disabled', 'true'); // sólo lectura
+  await page.keyboard.press('Escape');
+  // El menú no avanza la guardia.
+  const minute = await page.locator('.hud-clock').innerText();
+  await page.getByRole('button', { name: 'Menú y opciones' }).click();
+  await page.getByRole('button', { name: 'Volver al menú principal' }).click();
+  await page.waitForTimeout(1500);
+  await expect(page.locator('.menu-main')).toContainText('Continuar');
+  await page.locator('.menu-main').click();
+  expect(await page.locator('.hud-clock').innerText()).toBe(minute);
+});

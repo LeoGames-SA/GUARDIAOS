@@ -28,18 +28,43 @@ export function Menu() {
     else store.newCampaign(chosenSeed);
   };
 
+  const activeCases = camp ? camp.activeIds.length : 0;
+  const continueDetail = camp
+    ? camp.ended
+      ? 'Noche 1 terminada · ver resumen'
+      : `Noche 1 · ${clock(camp.minute)} · ${activeCases ? `${activeCases} expediente${activeCases > 1 ? 's' : ''} en curso` : 'sin expedientes activos'}`
+    : '';
+  const newGuard = () => (active ? setDialog('confirm-new') : startNew());
+
   return (
     <main className="menu">
+      <div
+        className="menu-backdrop"
+        style={{ backgroundImage: 'url(./assets/background.webp)' }}
+        aria-hidden="true"
+      />
       <div className="menu-scene" aria-hidden="true" inert>
         <div className="stage">
-          <Scene game={null} dual={false} pose={null} onOpen={() => undefined} inert />
+          <Scene
+            game={null}
+            dual={app.profile.secondMonitor}
+            pose={null}
+            onOpen={() => undefined}
+            inert
+            ambient
+          />
         </div>
       </div>
-      <div className="menu-card">
-        <h1>
-          Turno de Guardia
-          <small>Una noche de soporte técnico · 23:00 a 07:00</small>
+      <div className="menu-shade" aria-hidden="true" />
+      <section className="menu-panel" aria-labelledby="menu-title">
+        <p className="menu-kicker">Mutual Sur · Guardia nocturna</p>
+        <h1 id="menu-title">
+          <span className="t1">Turno de</span> <span>Guardia</span>
         </h1>
+        <p className="menu-lead">
+          Sos Nico, de soporte técnico. Atendé llamadas y correos, investigá con GuardiaOS y resolvé la noche
+          con pruebas, de 23:00 a 07:00.
+        </p>
         {app.notice && (
           <div className="notice" role="alert">
             <p>{app.notice}</p>
@@ -48,46 +73,54 @@ export function Menu() {
             </button>
           </div>
         )}
-        <nav className="menu-buttons" aria-label="Menú principal">
-          <button type="button" className="btn btn-primary" disabled={!camp} onClick={store.continueCampaign}>
-            Continuar
-            {camp && (
-              <span className="cost">{camp.ended ? 'ver resumen' : `${clock(camp.minute)} · noche 1`}</span>
-            )}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => (active ? setDialog('confirm-new') : startNew())}
-          >
-            Nueva guardia
-          </button>
-          {practiceOpen ? (
+        <nav className="menu-actions" aria-label="Menú principal">
+          {camp ? (
+            <>
+              <button type="button" className="btn btn-primary menu-main" onClick={store.continueCampaign}>
+                <span>Continuar</span>
+                <small>{continueDetail}</small>
+              </button>
+              <button type="button" className="btn menu-second" onClick={newGuard}>
+                Nueva guardia
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn btn-primary menu-main" onClick={newGuard}>
+              <span>Nueva guardia</span>
+              <small>
+                {app.profile.tutorialDone ? 'Noche 1 · empieza a las 23:00' : 'Con práctica breve opcional'}
+              </small>
+            </button>
+          )}
+          {practiceOpen && (
             <button
               type="button"
-              className="btn"
+              className="btn menu-second"
               onClick={() => store.startPractice(app.practice!.returnTo, false)}
             >
               Continuar la práctica
             </button>
-          ) : null}
-          <button type="button" className="btn" onClick={() => store.startPractice('menu')}>
-            Cómo se juega {app.profile.tutorialDone ? '(repetir práctica)' : '(práctica)'}
+          )}
+        </nav>
+        <nav className="menu-links" aria-label="Más opciones">
+          <button type="button" onClick={() => store.startPractice('menu')}>
+            Cómo se juega
           </button>
-          <button type="button" className="btn" onClick={() => setDialog('settings')}>
+          <button type="button" onClick={() => setDialog('settings')}>
             Opciones
           </button>
-          <button type="button" className="btn" onClick={() => setDialog('credits')}>
+          <button type="button" onClick={() => setDialog('credits')}>
             Créditos
           </button>
         </nav>
-        {app.profile.secondMonitor && (
-          <p className="small muted">Mejora del puesto: segundo monitor disponible.</p>
-        )}
-        <p className="small muted menu-foot">
-          Todo es simulado: el juego no se conecta a ninguna red ni ejecuta comandos en tu equipo.
-        </p>
-      </div>
+        <footer className="menu-foot small">
+          {app.profile.secondMonitor && <p>Mejora del puesto: segundo monitor habilitado.</p>}
+          <p>
+            Una idea de Wilson / WillTech. Todo es simulado: no se conecta a ninguna red ni ejecuta comandos
+            en tu equipo.
+          </p>
+        </footer>
+      </section>
 
       {dialog === 'confirm-new' && (
         <Panel title="¿Empezar una guardia nueva?" onClose={() => setDialog(null)} modal>

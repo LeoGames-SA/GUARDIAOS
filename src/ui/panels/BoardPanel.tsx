@@ -33,8 +33,13 @@ interface Thread {
  */
 export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => void }) {
   const store = useStore();
-  const cs = game.focusId ? game.cases[game.focusId] : null;
+  // Expediente a la vista: el activo por defecto; los archivados se consultan sin modificarlos.
+  const [archivedView, setArchivedView] = useState<string | null>(null);
+  const archived = Object.values(game.cases).filter((c) => c.status === 'closed' && c.notes.length > 0);
+  const viewId = archivedView && game.cases[archivedView]?.status === 'closed' ? archivedView : game.focusId;
+  const cs = viewId ? game.cases[viewId] : null;
   const def = cs ? CONTENT.cases[cs.id]! : null;
+  const readOnly = cs?.status === 'closed';
   const [sel, setSel] = useState<string | null>(cs?.workingHyp ?? def?.hypotheses[0]?.id ?? null);
   const contentRef = useRef<HTMLDivElement>(null);
   const hypPin = useRef<HTMLSpanElement>(null);
@@ -87,14 +92,74 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
     };
   }, [cs, hypId, linkKey]);
 
+  const tabs = (
+    <nav className="board-tabs" aria-label="Expedientes de la pizarra">
+      {game.activeIds.map((id) => (
+        <button
+          key={id}
+          type="button"
+          className="board-tab"
+          aria-pressed={!archivedView && game.focusId === id}
+          onClick={() => {
+            setArchivedView(null);
+            store.dispatch({ type: 'focus', caseId: id });
+          }}
+        >
+          {CONTENT.cases[id]!.number} · {CONTENT.cases[id]!.title}
+        </button>
+      ))}
+      {archived.length > 0 && (
+        <span className="board-tabs-arch">
+          <span className="small">Archivados:</span>
+          {archived.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className="board-tab arch"
+              aria-pressed={archivedView === c.id}
+              onClick={() => setArchivedView(c.id)}
+            >
+              {CONTENT.cases[c.id]!.number}
+            </button>
+          ))}
+        </span>
+      )}
+    </nav>
+  );
+
   if (!cs || !def) {
     return (
-      <Panel title="Pizarra de pruebas" onClose={onClose} className="board-panel">
-        <div className="panel-body">
-          <p className="muted">
-            No hay un expediente activo. Las notas aparecen acá a medida que la persona te cuenta cosas y vos
-            comprobás o intentás algo.
-          </p>
+      <Panel title="Pizarra de pruebas" onClose={onClose} className="board-panel" actions={tabs}>
+        <div className="corkframe" style={{ backgroundImage: `url(${artInfo('corkboard').file})` }}>
+          <div className="board-empty">
+            <div className="paper-note empty-note" style={{ '--tilt': '-2deg' } as CSSProperties}>
+              <span className="pin">
+                <img src={artInfo('pushpin').file} alt="" />
+              </span>
+              <b>Sin expediente activo</b>
+              <p>
+                Cuando tomes un caso, acá van a aparecer papelitos: lo que dijo la persona, lo que comprobaste
+                y lo que intentaste. Después los conectás con hilo a una hipótesis.
+              </p>
+            </div>
+            {archived.length > 0 && (
+              <div className="paper-note arch-note" style={{ '--tilt': '1.5deg' } as CSSProperties}>
+                <span className="pin">
+                  <img src={artInfo('pushpin').file} alt="" />
+                </span>
+                <b>Expedientes archivados</b>
+                <ul className="plain">
+                  {archived.map((c) => (
+                    <li key={c.id}>
+                      <button type="button" className="linkish" onClick={() => setArchivedView(c.id)}>
+                        #{CONTENT.cases[c.id]!.number} · {CONTENT.cases[c.id]!.title}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       </Panel>
     );
@@ -104,6 +169,7 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
   const reading = readHypothesis(def, cs, hyp.id);
   const linked = new Set(links.map((l) => l.noteId));
   const toggle = (n: Note) =>
+    !readOnly &&
     store.dispatch({
       type: linked.has(n.id) ? 'unlink' : 'link',
       caseId: cs.id,
@@ -115,32 +181,19 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
     <Panel
       title={
         <>
-          Pizarra · Expediente {def.number} <span className="muted small">{def.title}</span>
+          Pizarra · {def.number}{' '}
+          <span className="muted small">{readOnly ? 'archivado · sólo lectura' : def.title}</span>
         </>
       }
       onClose={onClose}
       className="board-panel"
-      actions={
-        game.activeIds.length > 1 ? (
-          <span className="row">
-            {game.activeIds
-              .filter((id) => id !== cs.id)
-              .map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  className="btn btn-sm"
-                  onClick={() => store.dispatch({ type: 'focus', caseId: id })}
-                >
-                  Ver {CONTENT.cases[id]!.number}
-                </button>
-              ))}
-          </span>
-        ) : null
-      }
+      actions={tabs}
     >
-      <div className="board">
-        <aside className="hyps" aria-label="Hipótesis">
+      <div className="board corkframe" style={{ backgroundImage: `url(${artInfo('corkboard').file})` }}>
+        <aside className="hyps paper-sheet" aria-label="Hipótesis">
+          <span className="pin sheet-pin">
+            <img src={artInfo('pushpin').file} alt="" />
+          </span>
           <h3>1 · Elegí una hipótesis</h3>
           <ul>
             {def.hypotheses.map((h) => {
@@ -171,7 +224,9 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
               {reading.neutral.length}
             </p>
           </div>
-          {cs.workingHyp === hyp.id ? (
+          {readOnly ? (
+            <p className="small">Expediente cerrado: la pizarra queda como registro.</p>
+          ) : cs.workingHyp === hyp.id ? (
             <button
               type="button"
               className="btn btn-sm"
@@ -193,7 +248,7 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
           </p>
         </aside>
 
-        <div className="cork" style={{ backgroundImage: `url(${artInfo('corkboard').file})` }}>
+        <div className="cork">
           <div className="cork-content" ref={contentRef}>
             <div className="hyp-card">
               <span className="pin" ref={hypPin}>
@@ -218,6 +273,7 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
                           type="button"
                           className={`note note-${n.kind} ${on ? 'on' : ''}`}
                           aria-pressed={on}
+                          aria-disabled={readOnly || undefined}
                           style={{ '--tilt': `${((i * 53) % 5) - 2}deg` } as CSSProperties}
                           onClick={() => toggle(n)}
                           aria-label={`${col.title}: ${n.text}. ${on ? `Conectada: ${REL_TEXT[rel]}.` : 'Sin conectar.'}`}

@@ -133,7 +133,7 @@ test('dos expedientes activos: reloj común, pruebas separadas y cambio de foco'
   await page.getByRole('button', { name: 'Pizarra de pruebas' }).click();
   await expect(page.locator('.note')).toHaveCount(1);
   await expect(page.locator('.note')).toContainText('tibarra');
-  await page.getByRole('button', { name: 'Ver 001' }).click();
+  await page.locator('.board-tabs').getByRole('button', { name: /^001/ }).click();
   await expect(page.locator('.note')).toHaveCount(0);
   await closePanel(page);
   // 001 conserva su plazo y lo vence si el tiempo pasa.
