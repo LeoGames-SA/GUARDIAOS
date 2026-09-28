@@ -42,6 +42,7 @@ test('pizarra con teclado; hilos alineados tras redimensionar y con zoom 125 %',
   page,
   browser,
 }) => {
+  const errors = watchConsole(page);
   await fresh(page);
   await startGuard(page, 7);
   await answer(page);
@@ -93,6 +94,7 @@ test('pizarra con teclado; hilos alineados tras redimensionar y con zoom 125 %',
   await expect(zoomed.locator('.thread')).toHaveCount(1);
   expect(await threadMisalignment(zoomed)).toBeLessThan(3);
   await ctx.close();
+  expect(errors).toEqual([]); // incluye recursos que no cargan (p. ej. el corcho)
 });
 
 test('ventanas: mover, minimizar, restaurar, cerrar y menú contextual por teclado', async ({ page }) => {

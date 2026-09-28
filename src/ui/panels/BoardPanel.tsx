@@ -189,7 +189,7 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
           </p>
         </aside>
 
-        <div className="cork" style={{ '--cork': `url(${artInfo('corkboard').file})` } as CSSProperties}>
+        <div className="cork" style={{ backgroundImage: `url(${artInfo('corkboard').file})` }}>
           <div className="cork-content" ref={contentRef}>
             <div className="hyp-card">
               <span className="pin" ref={hypPin}>
