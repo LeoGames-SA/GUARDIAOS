@@ -22,7 +22,7 @@ Rama: `claude/turno-guardia-game-8upsky`. Estado: **noche 1 completa y jugable**
 ## No verificado / límites
 
 - No se probó con lector de pantalla real; sólo atributos ARIA y navegación por teclado.
-- El audio no se escuchó (entorno sin salida de sonido); se comprobó sólo que no falla ni suena antes de un gesto.
+- El audio no se escuchó (entorno sin salida de sonido). Sólo consta que los recorridos no dan errores de consola; que no suene antes de un gesto del usuario está en el código (`sound.unlock`) pero no se midió.
 - Rendimiento medido en un navegador headless sin GPU; no se afirma 60 fps. Conviene repetir `scripts/perf.mjs` en el equipo del usuario.
 - Aprobación artística final: pendiente de que el usuario mire `docs/capturas` o el juego.
 
