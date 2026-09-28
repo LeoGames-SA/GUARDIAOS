@@ -26,6 +26,11 @@
   --font: 'Segoe UI', 'Inter', system-ui, -apple-system, 'Noto Sans', sans-serif;
   --mono: 'JetBrains Mono', 'Cascadia Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --hud-h: 52px;
+  /* Geometría del escenario (interfaz): ancho con tope, alto por proporción y márgenes. */
+  --sw: min(100vw, calc((100vh - var(--hud-h)) * 1672 / 941), 1840px);
+  --sh: calc(var(--sw) * 941 / 1672);
+  --sl: calc((100vw - var(--sw)) / 2);
+  --sb: calc((100vh - var(--hud-h) - var(--sh)) / 2);
   font-size: 16px;
   color-scheme: dark;
 }
@@ -175,7 +180,8 @@ p {
 }
 .stage {
   position: relative;
-  width: min(100vw, calc((100vh - var(--hud-h)) * 1672 / 941));
+  /* En pantallas anchas no se agranda indefinidamente: tope de ancho y márgenes ambientados. */
+  width: var(--sw);
   aspect-ratio: 1672 / 941;
   container-type: inline-size;
   overflow: hidden;
@@ -332,28 +338,33 @@ p {
   box-shadow: 0 0 1cqw #ff5a3c;
   animation: blink 0.9s steps(2, jump-none) infinite;
 }
-.phone-led.call {
+.phone-led.led-hold {
+  background: #f2c261;
+  box-shadow: 0 0 0.6cqw #f2c261;
+  animation: blink 1.6s steps(2, jump-none) infinite;
+}
+.phone-led.led-call {
   background: #7ce07c;
   box-shadow: 0 0 0.6cqw #7ce07c;
 }
 .phone-lcd {
   position: absolute;
-  left: 47%;
-  top: 11%;
-  width: 34%;
-  height: 14%;
-  display: grid;
-  place-items: center;
-  font-family: var(--mono);
-  font-size: 1.05cqw;
-  font-weight: 700;
-  color: #1c2a12;
-  letter-spacing: 0.05em;
-  transform: skewX(-4deg) rotate(1.5deg);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+  overflow: visible;
 }
-.is-ringing .phone-lcd {
-  color: #6d1d0e;
+.phone-lcd text {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  fill: #20331a;
+  opacity: 0.85;
+}
+.phone-lcd text.lcd-alert {
+  fill: #7a1c0c;
 }
 @keyframes blink {
   50% {
@@ -624,8 +635,11 @@ p {
   display: flex;
   pointer-events: none;
 }
+.overlay.with-pill {
+  bottom: 64px;
+}
 .overlay.with-call {
-  left: min(360px, 34vw);
+  left: calc(var(--sl) + min(414px, 40vw));
 }
 .scrim {
   position: fixed;
@@ -976,106 +990,230 @@ details > summary {
   width: min(760px, 100%);
 }
 
-/* ------------------------------------------------------------ llamada */
+/* ------------------------------------------------------------ llamada
+   Capa propia en coordenadas de interfaz: no mueve ni achica la escena. */
 .call {
   position: fixed;
-  left: 0;
-  top: var(--hud-h);
-  bottom: 0;
-  width: min(360px, 34vw);
   z-index: 300;
-  display: flex;
-  flex-direction: column;
-  background: #0c1f28f5;
-  border-right: 1px solid #3c6878;
-  box-shadow: 10px 0 30px #0008;
-  animation: slide-in var(--panel-t) ease-out;
+  left: calc(var(--sl) + 12px);
+  bottom: calc(var(--sb) + 12px);
+  background: #0c1f28f7;
+  border: 1px solid #3c6878;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px #000b;
+  animation: call-in var(--panel-t) ease-out;
 }
-@keyframes slide-in {
+@keyframes call-in {
   from {
-    transform: translateX(-12px);
+    transform: translateY(10px);
     opacity: 0;
   }
+}
+.call-card {
+  width: min(390px, calc(100vw - 24px));
+  max-height: calc(100vh - var(--hud-h) - 24px);
+  display: flex;
+  flex-direction: column;
+}
+.call-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  max-width: calc(100vw - 24px);
+}
+.call-pill .pill-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.state-entrante {
+  border-color: #ff8a6a;
+  box-shadow:
+    0 0 0 3px #ff8a6a33,
+    0 16px 40px #000b;
+}
+.state-en-espera {
+  border-color: var(--warn);
 }
 .call-head {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 12px 14px;
+  padding: 7px 8px 7px 14px;
   border-bottom: 1px solid #ffffff14;
+}
+.call-who {
+  flex: 1;
+  min-width: 0;
 }
 .call-head small {
   display: block;
   color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.call-state {
+  color: var(--ok);
+  font-size: 0.72rem;
+}
+.state-en-espera .call-state {
+  color: var(--warn);
+}
+.state-finalizada .call-state {
+  color: var(--muted);
+}
+.call-collapse {
+  min-width: 36px;
 }
 .call-led {
+  flex-shrink: 0;
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: #7ce07c;
   box-shadow: 0 0 8px #7ce07c;
 }
+.state-en-espera .call-led {
+  background: var(--warn);
+  box-shadow: 0 0 8px var(--warn);
+}
+.state-finalizada .call-led {
+  background: #6b7a80;
+  box-shadow: none;
+}
+.call-led.ringing {
+  background: #ff5a3c;
+  box-shadow: 0 0 10px #ff5a3c;
+  animation: blink 0.9s steps(2, jump-none) infinite;
+}
+.call-log-wrap {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .call-log {
   list-style: none;
   margin: 0;
   padding: 12px 14px;
   overflow: auto;
-  flex: 1;
+  max-height: min(24vh, 260px);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overscroll-behavior: contain;
 }
+/* Transcripción con márgenes consistentes: texto siempre alineado a la izquierda. */
 .line {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-width: 92%;
+  gap: 3px;
 }
 .line .who {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--muted);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 .line .said {
   background: #183845;
-  border-radius: 10px 10px 10px 3px;
-  padding: 8px 11px;
+  border-radius: 4px 12px 12px 12px;
+  padding: 8px 12px;
+  line-height: 1.45;
+  margin-right: 28px;
 }
 .line-nico {
-  align-self: flex-end;
-  text-align: right;
+  padding-left: 28px;
 }
 .line-nico .said {
   background: #3a3220;
-  border-radius: 10px 10px 3px 10px;
+  border-radius: 12px 4px 12px 12px;
+  margin-right: 0;
+}
+.call-newlines {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 16px #000a;
+}
+.call-foot {
+  border-top: 1px solid #ffffff1c;
+  background: #0a1a21;
+  border-radius: 0 0 14px 14px;
+  min-height: 0;
+  overflow: auto;
 }
 .call-options {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px 12px 14px;
-  border-top: 1px solid #ffffff14;
-  max-height: 55%;
-  overflow: auto;
+  padding: 8px 12px 10px;
+}
+.opt-title {
+  margin: 0 0 2px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--amber-2);
 }
 .opt {
   justify-content: space-between;
   text-align: left;
   font-weight: 500;
   line-height: 1.3;
+  border-left: 3px solid var(--cool);
+}
+.opt .cost {
+  margin-left: 10px;
 }
 .opt-verify {
-  border-color: #6aa37a;
+  border-left-color: var(--ok);
 }
 .opt-soft {
   background: #142c35;
   font-style: italic;
+  border-left-color: #6d8a93;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  min-height: 30px;
+  padding: 3px 9px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  border-left: 3px solid var(--cool);
+}
+.chip .cost {
+  margin-left: 6px;
+}
+.chip-verify {
+  border-left-color: var(--ok);
+}
+.chip-soft {
+  border-left-color: #6d8a93;
+  font-style: italic;
+}
+.call-tools {
+  gap: 2px;
+}
+.call-actions {
+  justify-content: space-between;
+  margin-top: 4px;
 }
 .call-skip {
-  padding: 10px 14px;
-  border-top: 1px solid #ffffff14;
+  padding: 8px 14px;
+  margin: 0;
+}
+.call-expand {
+  margin-left: auto;
 }
 
 /* ------------------------------------------------------------ GuardiaOS */
@@ -2203,14 +2341,6 @@ details > summary {
   filter: drop-shadow(0 0 0.8cqw #ffcf70) drop-shadow(0 0.35cqw 0.45cqw #000a) brightness(1.1);
 }
 
-/* Con llamada activa, la escena se corre para quedar entera a la derecha del panel. */
-.desk.in-call .stage-wrap {
-  left: min(360px, 34vw);
-}
-.desk.in-call .stage {
-  width: min(calc(100vw - min(360px, 34vw)), calc((100vh - var(--hud-h)) * 1672 / 941));
-}
-
 /* ------------------------------------------------------------ navegación móvil */
 .mobile-nav {
   display: none;
@@ -2281,8 +2411,8 @@ details > summary {
     bottom: 0;
     z-index: 150;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: minmax(64px, auto);
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: minmax(84px, auto);
     align-content: start;
     gap: 10px;
     padding: 14px;
@@ -2290,22 +2420,31 @@ details > summary {
     overflow: auto;
   }
   .mobile-nav button {
-    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 4px;
+    min-height: 84px;
     border-radius: 12px;
     border: 1px solid var(--line);
     background: var(--panel-2);
-    font-size: 1.05rem;
+    font-size: 0.88rem;
     font-weight: 700;
   }
-  .desk.in-call .stage-wrap {
-    left: 0;
+  .mobile-nav img {
+    height: 40px;
+    max-width: 80%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px #0008);
   }
-  .desk.in-call .stage {
-    width: min(100vw, calc(var(--stage-h) * 1672 / 941));
+  .mn-icon {
+    font-size: 1.6rem;
+    line-height: 40px;
   }
   .desk.in-call .mobile-nav {
-    top: calc(var(--hud-h) + 60vh);
-    grid-auto-rows: minmax(52px, auto);
+    padding-bottom: 76px;
   }
   .mobile-nav button.ringing {
     background: #5a1d12;
@@ -2332,11 +2471,16 @@ details > summary {
     max-height: 100%;
   }
   .call {
-    width: 100%;
-    bottom: auto;
-    height: 60vh;
-    border-right: 0;
-    border-bottom: 1px solid #3c6878;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+  .call-card {
+    width: auto;
+    max-height: 62vh;
+  }
+  .call-log {
+    max-height: 30vh;
   }
   .os-icons {
     width: 100%;
@@ -2405,32 +2549,8 @@ details > summary {
   border-color: #56656a;
 }
 
-.call-expand {
-  display: none;
-  margin-left: auto;
-}
 @media (max-width: 760px), (max-height: 520px) and (max-width: 1000px) {
-  .call.collapsed {
-    top: auto;
-    bottom: 0;
-    height: auto;
-    z-index: 600;
-    border-top: 1px solid #3c6878;
-  }
-  .call.collapsed > :not(.call-head) {
-    display: none;
-  }
-  .call.collapsed .call-expand {
-    display: inline-flex;
-  }
   .desk.in-call .overlay {
-    bottom: 76px;
-  }
-  .call.collapsed .call-head {
-    height: 76px;
-    padding: 8px 12px;
-  }
-  .call.collapsed .call-head small {
-    display: none;
+    bottom: 64px;
   }
 }

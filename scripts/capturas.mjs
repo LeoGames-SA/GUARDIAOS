@@ -1,26 +1,42 @@
 /**
- * Genera capturas de referencia en docs/capturas (menú, mesa, GuardiaOS, llamada, pizarra).
- * Uso: npm run build && npx vite preview --port 4173 &  node scripts/capturas.mjs
+ * Capturas comparables de la build (mismos tamaños y estados).
+ * Uso: npm run build && npx vite preview --port 4173 &
+ *      node scripts/capturas.mjs [url] [carpeta] [estados separados por coma]
+ * Por defecto guarda WebP en docs/capturas.
  */
 import { chromium } from '@playwright/test';
 import { mkdir, readdir, unlink } from 'node:fs/promises';
 import sharp from 'sharp';
 
 const url = process.argv[2] ?? 'http://localhost:4173/';
-const out = 'docs/capturas';
+const out = process.argv[3] ?? 'docs/capturas';
+const only = process.argv[4]?.split(',');
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
 
+const SIZES = [
+  { width: 1366, height: 768 },
+  { width: 1920, height: 1080 },
+  { width: 3440, height: 1440 },
+  { width: 390, height: 844 },
+];
+
 async function shoot(size, name, setup) {
+  if (only && !only.includes(name)) return;
   const page = await browser.newPage({ viewport: size });
-  await page.goto(url);
-  await page.evaluate(() => localStorage.clear());
-  await page.reload();
-  await setup(page);
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(700);
-  await page.screenshot({ path: `${out}/${name}-${size.width}x${size.height}.png` });
-  await page.close();
+  try {
+    await page.goto(url);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await setup(page, size.width < 700);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${out}/${name}-${size.width}x${size.height}.png` });
+  } catch (e) {
+    console.log(`No se pudo capturar ${name} ${size.width}: ${String(e).split('\n')[0]}`);
+  } finally {
+    await page.close();
+  }
 }
 
 const start = async (page, seed = 7) => {
@@ -40,36 +56,81 @@ const investigate = async (page) => {
       t.dispatch({ type: 'link', caseId: 'c001', noteId: n.id, hypId: 'drv' });
   });
 };
+const tap = async (page, mobile, sceneName, navName) => {
+  // En móvil la llamada ocupa la parte inferior: se contrae para ver las herramientas.
+  const collapse = page.getByRole('button', { name: 'Contraer la llamada' });
+  if (mobile && (await collapse.isVisible().catch(() => false))) await collapse.click();
+  return (
+    mobile
+      ? page.locator('.mobile-nav').getByRole('button', { name: navName })
+      : page.getByRole('button', { name: sceneName })
+  )
+    .first()
+    .click();
+};
+const openApp = async (page, mobile, app) => {
+  await tap(page, mobile, /Monitor: abrir/, 'Monitor');
+  await page.getByRole('button', { name: /Inicio/ }).click();
+  await page.getByRole('menuitem', { name: new RegExp(app) }).click();
+};
 
-for (const size of [
-  { width: 1366, height: 768 },
-  { width: 1920, height: 1080 },
-  { width: 390, height: 844 },
-]) {
-  const mobile = size.width < 700;
+for (const size of SIZES) {
   await shoot(size, 'menu', async () => {});
+  await shoot(size, 'menu-continuar', async (p) => {
+    await start(p);
+    await p.evaluate(() => window.__tdg.toMenu());
+  });
   await shoot(size, 'mesa', (p) => start(p));
   await shoot(size, 'llamada', async (p) => {
     await start(p);
     await p.evaluate(() => window.__tdg.dispatch({ type: 'answerCall' }));
   });
-  await shoot(size, 'guardiaos', async (p) => {
+  await shoot(size, 'llamada-pizarra', async (p, m) => {
     await investigate(p);
-    await (
-      mobile
-        ? p.locator('.mobile-nav').getByRole('button', { name: 'Monitor' })
-        : p.getByRole('button', { name: /Monitor: abrir/ })
-    ).click();
-    await p.getByRole('button', { name: /Inicio/ }).click();
-    await p.getByRole('menuitem', { name: /Eventos/ }).click();
+    await tap(p, m, 'Pizarra de pruebas', 'Pizarra');
   });
-  await shoot(size, 'pizarra', async (p) => {
+  await shoot(size, 'pizarra-vacia', async (p, m) => {
+    await start(p);
+    await tap(p, m, 'Pizarra de pruebas', 'Pizarra');
+  });
+  await shoot(size, 'guardiaos', async (p, m) => {
     await investigate(p);
-    await (
-      mobile
-        ? p.locator('.mobile-nav').getByRole('button', { name: 'Pizarra' })
-        : p.getByRole('button', { name: 'Pizarra de pruebas' })
-    ).click();
+    await openApp(p, m, 'Eventos');
+  });
+  await shoot(size, 'correo', async (p, m) => {
+    await start(p);
+    await p.evaluate(() => {
+      const t = window.__tdg;
+      t.dispatch({ type: 'answerCall' });
+      t.dispatch({ type: 'hangUp' });
+      t.dispatch({ type: 'wait' });
+    });
+    await openApp(p, m, 'Correo');
+  });
+  await shoot(size, 'navegador', async (p, m) => {
+    await start(p);
+    await openApp(p, m, 'Navegador');
+  });
+  await shoot(size, 'cafe', async (p) => {
+    await start(p);
+    await p.evaluate(() => {
+      window.__tdg.dispatch({ type: 'answerCall' });
+      window.__tdg.dispatch({ type: 'hangUp' });
+    });
+    await p.getByRole('button', { name: /Taza/ }).first().click();
+    await p.waitForTimeout(300);
+    const take = p.locator('.pauses li.preset').getByRole('button', { name: /Tomar/ });
+    if (await take.isVisible().catch(() => false)) await take.click();
+  });
+  await shoot(size, 'informe', async (p) => {
+    await start(p, 1);
+    await p.evaluate(() => {
+      const t = window.__tdg;
+      t.dispatch({ type: 'answerCall' });
+      for (const id of ['t-queue', 'i-cancel-job', 'v-retry'])
+        t.dispatch({ type: 'probe', caseId: 'c001', probeId: id });
+      t.dispatch({ type: 'close', caseId: 'c001' });
+    });
   });
 }
 await browser.close();

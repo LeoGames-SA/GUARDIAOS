@@ -19,6 +19,8 @@ import type {
 
 export const MAX_ACTIVE = 2;
 export const MISSED_CALL_AFTER = 10;
+/** Minutos simulados de espera tolerados antes de que la persona se impaciente. */
+export const HOLD_PATIENCE = 15;
 const TRUST_START = 3;
 const TRUST_MAX = 5;
 
@@ -398,6 +400,50 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       state.call = null;
       return { state, events };
     }
+    case 'hold': {
+      const call = state.call;
+      if (!call || call.ended) return blocked('No hay una conversación en curso.');
+      if (call.held) return blocked('La llamada ya está en espera.');
+      const def = getCaseDef(content, call.caseId);
+      const cs = state.cases[call.caseId]!;
+      const who = cs.contactKnown ? def.contact.short : '';
+      call.lines.push({
+        speaker: 'nico',
+        text: `${who ? `${who}, ` : ''}te pongo un momento en espera mientras reviso algo. No cortes, ¿dale?`,
+      });
+      call.lines.push({ speaker: 'contact', text: 'Dale, espero.' });
+      call.held = true;
+      call.heldSince = state.minute;
+      history(state, cs.id, 'Teléfono', def.contact.device, 'Llamada en espera', 'Auricular en la base', 0);
+      return { state, events };
+    }
+    case 'resume': {
+      const call = state.call;
+      if (!call?.held) return blocked('No hay una llamada en espera.');
+      const def = getCaseDef(content, call.caseId);
+      const cs = state.cases[call.caseId]!;
+      // La demora se mide en minutos simulados, nunca en tiempo real de lectura.
+      const waited = state.minute - (call.heldSince ?? state.minute);
+      call.held = false;
+      delete call.heldSince;
+      call.lines.push({ speaker: 'nico', text: 'Gracias por esperar. Sigo con vos.' });
+      let reply = 'Sí, acá estoy.';
+      if (waited > HOLD_PATIENCE) {
+        reply = 'Uf, ya pensaba que se había cortado…';
+        cs.trust = clamp(cs.trust - 1, 0, TRUST_MAX);
+      } else if (waited >= 10) reply = 'Sí, acá sigo. ¿Pudiste ver algo?';
+      call.lines.push({ speaker: 'contact', text: reply });
+      history(
+        state,
+        cs.id,
+        'Teléfono',
+        def.contact.device,
+        'Retomé la llamada',
+        waited ? `Esperó ${waited} min${waited > HOLD_PATIENCE ? ' (se impacientó)' : ''}` : 'Sin demora',
+        0,
+      );
+      return { state, events };
+    }
     case 'callContact': {
       const cs = state.cases[action.caseId];
       if (!cs) return blocked('Expediente desconocido.');
@@ -434,6 +480,8 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
     case 'reassure': {
       const call = state.call;
       if (!call) return blocked('No hay llamada en curso.');
+      if (call.held) return blocked('La llamada está en espera: retomala para hablar.');
+      if (call.ended) return blocked('La conversación ya terminó.');
       const cs = state.cases[call.caseId]!;
       const def = getCaseDef(content, cs.id);
       let nico: string;
@@ -533,7 +581,8 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
         );
       for (const need of def.closeNeeds ?? []) if (!cs.flags.includes(need.flag)) return blocked(need.reason);
       const clean = !cs.deadlinePassed && cs.wrong === 0 && cs.consequences.length === 0;
-      finishCase(content, state, cs, clean ? 'verified' : 'costly', events);
+      farewell(state, def, cs, clean);
+      finishCase(content, state, cs, clean ? 'verified' : 'costly', events, true);
       return { state, events };
     }
     case 'escalate': {
@@ -558,7 +607,9 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
     }
     case 'pause': {
       if (state.mode === 'practice') return blocked('En la práctica no hay pausas: el reloj no corre.');
-      if (state.call) return blocked('Terminá la llamada antes de tomarte una pausa.');
+      // La pelota se puede usar con la llamada en espera; el resto de las pausas, no.
+      if (state.call && !(action.kind === 'ball' && state.call.held))
+        return blocked('Terminá la llamada antes de tomarte una pausa.');
       const def = PAUSES[action.kind];
       const res = def.apply(state.needs, {
         lastBallAt: state.lastBallAt,
@@ -615,6 +666,7 @@ function finishCase(
   cs: CaseState,
   outcome: CaseState['outcome'] & string,
   events: GameEvent[],
+  keepCall = false,
 ) {
   const def = getCaseDef(content, cs.id);
   cs.status = 'closed';
@@ -623,7 +675,8 @@ function finishCase(
   if (cs.takenAt === null) cs.takenAt = cs.arrivedAt ?? state.minute;
   state.activeIds = state.activeIds.filter((id) => id !== cs.id);
   if (state.focusId === cs.id) state.focusId = state.activeIds[0] ?? null;
-  if (state.call?.caseId === cs.id) state.call = null;
+  // Con despedida en curso la llamada sigue abierta hasta colgar; el informe se muestra después.
+  if (state.call?.caseId === cs.id && !(keepCall && state.call.ended)) state.call = null;
   if (state.incoming?.caseId === cs.id) state.incoming = null;
   if (!state.learned.includes(def.id)) state.learned.push(def.id);
   if (outcome !== 'escalated')
@@ -637,6 +690,41 @@ function finishCase(
       0,
     );
   events.push({ type: 'closed', caseId: cs.id, outcome });
+}
+
+/** Cierre humano: despedida por teléfono (si hay llamada) o correo de cierre. Sin costo de tiempo. */
+function farewell(state: GameState, def: CaseDef, cs: CaseState, clean: boolean) {
+  const f = def.farewell ?? {
+    nico: 'Buenísimo. Quedó funcionando; dejo todo registrado en el ticket. Cualquier cosa, llamame.',
+    warm: '¡Mil gracias! Me salvaste la noche. Buena guardia.',
+    costly: 'Gracias… llegó un poco tarde, pero al menos ya funciona. Buenas noches.',
+    cold: 'Bueno, gracias. Chau.',
+  };
+  const reply = !clean ? f.costly : cs.trust <= 1 ? f.cold : f.warm;
+  const call = state.call;
+  if (def.channel === 'phone' && call?.caseId === cs.id && !call.ended) {
+    if (call.held) {
+      call.held = false;
+      delete call.heldSince;
+    }
+    call.lines.push({ speaker: 'nico', text: f.nico });
+    call.lines.push({ speaker: 'contact', text: reply });
+    call.ended = true;
+  } else if (def.channel === 'email') {
+    cs.messages.push({
+      id: nextId(state, 'm'),
+      at: state.minute,
+      from: 'Nicolás Bentancor (Soporte)',
+      to: def.contact.name,
+      subject: `RE: ${def.message?.subject ?? def.title} [resuelto]`,
+      body: [
+        f.mail ??
+          `${def.contact.short}, confirmado: quedó resuelto. Cierro el ticket; si vuelve a pasar, respondé este correo.`,
+        'Saludos, Nicolás · Soporte',
+      ],
+      outgoing: true,
+    });
+  }
 }
 
 export function outcomeLabel(o: NonNullable<CaseState['outcome']>): string {
@@ -685,6 +773,8 @@ export function probeBlockReason(
   if (cs.status !== 'active') return 'Primero tomá el expediente.';
   if (probe.app === 'phone' && state.call?.caseId !== cs.id)
     return `Hace falta estar en llamada con ${cs.contactKnown ? def.contact.short : 'la persona'}.`;
+  if (probe.app === 'phone' && state.call?.held) return 'La llamada está en espera: retomala para hablar.';
+  if (probe.app === 'phone' && state.call?.ended) return 'La conversación ya terminó.';
   return probe.requires?.(caseView(cs)) ?? null;
 }
 

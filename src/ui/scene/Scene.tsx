@@ -4,6 +4,8 @@ import {
   heightOf,
   LAYOUTS,
   MONITOR_GLASS,
+  PHONE_LCD,
+  PHONE_BADGE as BADGE,
   POSES,
   SCENE_H,
   SCENE_W,
@@ -36,6 +38,10 @@ interface Props {
   onOpen: (t: SceneTarget, el: HTMLElement) => void;
   highlight?: SceneTarget | null;
   inert?: boolean;
+  /** Objetos que Nico tiene en la mano (se ocultan en la mesa para no duplicarlos). */
+  holding?: SlotId[];
+  /** Fase de la animación de la pose de café (sólo visual). */
+  poseClass?: string;
 }
 
 export function pos(p: {
@@ -58,6 +64,32 @@ export function pos(p: {
 }
 
 const src = (p: Placement) => artInfo(p.art).file;
+
+/**
+ * Texto del visor dibujado en la base: SVG con el tamaño del dibujo y una transformación afín
+ * medida sobre las esquinas del LCD, para que siga su perspectiva y no flote sobre la carcasa.
+ */
+function PhoneLcd({ text, alert }: { text: string; alert: boolean }) {
+  const { width: W, height: H } = artInfo('telephone-base');
+  const { tl, tr, bl } = PHONE_LCD;
+  const m = [
+    ((tr[0] - tl[0]) * W) / 100,
+    ((tr[1] - tl[1]) * H) / 100,
+    ((bl[0] - tl[0]) * W) / 30,
+    ((bl[1] - tl[1]) * H) / 30,
+    tl[0] * W,
+    tl[1] * H,
+  ].map((v) => v.toFixed(3));
+  return (
+    <svg className="phone-lcd" viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      <g transform={`matrix(${m.join(' ')})`}>
+        <text x="50" y="19.5" textAnchor="middle" className={alert ? 'lcd-alert' : ''}>
+          {text}
+        </text>
+      </g>
+    </svg>
+  );
+}
 
 /** Objeto interactivo: botón real con nombre accesible; la imagen es decorativa. */
 function Obj(props: {
@@ -169,13 +201,24 @@ function BoardThumbs({ notes }: { notes: Note[] }) {
   );
 }
 
-export const Scene = memo(function Scene({ game, dual, pose, onOpen, highlight, inert }: Props) {
+export const Scene = memo(function Scene({
+  game,
+  dual,
+  pose,
+  onOpen,
+  highlight,
+  inert,
+  holding,
+  poseClass,
+}: Props) {
   const L = LAYOUTS[dual ? 'dual' : 'single'];
   const ringing = Boolean(game?.incoming);
   const inCall = Boolean(game?.call);
+  const onHold = Boolean(game?.call?.held);
   const focus = game?.focusId ? game.cases[game.focusId] : null;
-  const activePose = inCall ? 'phone' : pose;
-  const hidden = new Set<SlotId>(activePose ? [POSES[activePose].hides] : []);
+  // En espera, el auricular vuelve a la base: no hay mano con teléfono.
+  const activePose = inCall && !onHold ? 'phone' : pose;
+  const hidden = new Set<SlotId>([...(activePose ? [POSES[activePose].hides] : []), ...(holding ?? [])]);
   const s = (id: SlotId) => L[id]!;
   const screenRect = (slot: Placement) => {
     const r = MONITOR_GLASS;
@@ -257,10 +300,21 @@ export const Scene = memo(function Scene({ game, dual, pose, onOpen, highlight, 
         className={ringing ? 'is-ringing' : ''}
         inert={inert}
       >
-        <span className={`phone-led ${ringing ? 'on' : inCall ? 'call' : ''}`} />
-        <span className="phone-lcd">
-          {ringing ? 'LLAMADA' : inCall ? 'EN LÍNEA' : game ? clock(game.minute) : ''}
-        </span>
+        <span className={`phone-led ${ringing ? 'on' : inCall ? (onHold ? 'led-hold' : 'led-call') : ''}`} />
+        <PhoneLcd
+          text={
+            ringing
+              ? 'LLAMADA'
+              : inCall
+                ? onHold
+                  ? 'EN ESPERA'
+                  : 'EN LÍNEA'
+                : game
+                  ? clock(game.minute)
+                  : ''
+          }
+          alert={ringing}
+        />
       </Obj>
       <img
         className={`decor handset ${ringing ? 'wiggle' : ''}`}
@@ -269,7 +323,7 @@ export const Scene = memo(function Scene({ game, dual, pose, onOpen, highlight, 
         style={{ ...pos(s('handset')), visibility: hidden.has('handset') ? 'hidden' : undefined }}
       />
       {ringing && (
-        <span className="ring-badge" style={pos({ x: 120, y: 488, w: 240, z: 60 })}>
+        <span className="ring-badge" style={pos({ x: BADGE.x, y: BADGE.y, w: 200, z: 60 })}>
           Suena el teléfono
         </span>
       )}
@@ -312,7 +366,7 @@ export const Scene = memo(function Scene({ game, dual, pose, onOpen, highlight, 
 
       {activePose && (
         <img
-          className="decor pose"
+          className={`decor pose pose-${activePose} ${activePose === 'coffee' ? (poseClass ?? '') : ''}`}
           src={artInfo(POSES[activePose].art).file}
           alt=""
           style={pos(POSES[activePose])}

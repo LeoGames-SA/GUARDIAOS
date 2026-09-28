@@ -90,7 +90,8 @@ test('pizarra con teclado; hilos alineados tras redimensionar y con zoom 125 %',
     .getByRole('button', { name: /Continuar/ })
     .first()
     .click();
-  await zoomed.getByRole('button', { name: 'Pizarra de pruebas' }).click();
+  // Durante la llamada, la pizarra también se abre desde la tarjeta de conversación.
+  await zoomed.locator('aside.call').getByRole('button', { name: 'Pizarra', exact: true }).click();
   await expect(zoomed.locator('.thread')).toHaveCount(1);
   expect(await threadMisalignment(zoomed)).toBeLessThan(3);
   await ctx.close();
@@ -149,7 +150,7 @@ test('pausas, pelota, cubo y gato: costos visibles y efectos acotados', async ({
   await fresh(page);
   await startGuard(page, 1);
   await page.getByRole('button', { name: /Teléfono: está sonando/ }).click();
-  await page.locator('aside.call').getByRole('button', { name: 'Cortar la llamada' }).click();
+  await page.locator('aside.call').getByRole('button', { name: 'Cortar', exact: true }).click();
 
   // Café desde la taza: 5 min y novedades del turno.
   await page.getByRole('button', { name: 'Taza: pausa para café' }).click();
@@ -202,4 +203,35 @@ test('pausas, pelota, cubo y gato: costos visibles y efectos acotados', async ({
   await expect(br.getByRole('img', { name: /gatito naranja/ })).toBeVisible();
   await br.getByRole('button', { name: /Quedarse mirándolo.*una vez por noche/ }).click();
   await expect(br.getByRole('button', { name: /Quedarse mirándolo/ })).not.toContainText('una vez por noche');
+});
+
+test('la llamada no mueve la mesa: atender, contraer, espera, retomar y cortar', async ({ page }) => {
+  await fresh(page);
+  await startGuard(page, 7);
+  const boxes = async () =>
+    page.evaluate(() =>
+      ['monitor', 'board', 'notebook', 'mug', 'phone'].map((t) => {
+        const r = document.querySelector(`[data-target=${t}]`)!.getBoundingClientRect();
+        return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)].join(',');
+      }),
+    );
+  const before = await boxes();
+  await page.getByRole('button', { name: /Teléfono: está sonando/ }).click();
+  const call = page.locator('aside.call');
+  await expect(call).toContainText('En conversación');
+  expect(await boxes()).toEqual(before);
+  await call.getByRole('button', { name: 'Poner en espera' }).click();
+  await expect(call).toContainText('En espera');
+  await expect(call).toContainText('te pongo un momento en espera');
+  expect(await boxes()).toEqual(before);
+  await call.getByRole('button', { name: 'Contraer la llamada' }).click();
+  await expect(page.locator('.call-pill')).toContainText('en espera');
+  expect(await boxes()).toEqual(before);
+  await page.locator('.call-pill').getByRole('button', { name: 'Retomar' }).click();
+  await page.locator('.call-pill').getByRole('button', { name: 'Ver conversación' }).click();
+  await expect(call).toContainText('Gracias por esperar');
+  await expect(call).toContainText('Mesa de ayuda'); // el diálogo continúa, no se reinicia
+  await call.getByRole('button', { name: 'Cortar', exact: true }).click();
+  await expect(call).toHaveCount(0);
+  expect(await boxes()).toEqual(before);
 });

@@ -20,6 +20,8 @@ export interface Prefs {
   volume: number;
   ambient: boolean;
   ambientVolume: number;
+  /** Volumen de los murmullos de voz en las conversaciones (0 = sin voces). */
+  voiceVolume: number;
   typewriter: boolean;
   motion: 'system' | 'reduced' | 'full';
   textSize: 'normal' | 'large';
@@ -30,6 +32,7 @@ export const DEFAULT_PREFS: Prefs = {
   volume: 0.6,
   ambient: false,
   ambientVolume: 0.3,
+  voiceVolume: 0.5,
   typewriter: true,
   motion: 'system',
   textSize: 'normal',
@@ -152,6 +155,7 @@ export function loadPrefs(storage: StorageLike): Prefs {
     volume: clamp01(d.volume, DEFAULT_PREFS.volume),
     ambient: isBool(d.ambient) ? d.ambient : DEFAULT_PREFS.ambient,
     ambientVolume: clamp01(d.ambientVolume, DEFAULT_PREFS.ambientVolume),
+    voiceVolume: clamp01(d.voiceVolume, DEFAULT_PREFS.voiceVolume),
     typewriter: isBool(d.typewriter) ? d.typewriter : DEFAULT_PREFS.typewriter,
     motion: d.motion === 'reduced' || d.motion === 'full' ? d.motion : 'system',
     textSize: d.textSize === 'large' ? 'large' : 'normal',

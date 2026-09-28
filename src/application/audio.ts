@@ -14,6 +14,9 @@ class Sound {
   volume = 0.6;
   ambientVolume = 0.3;
   ambientWanted = false;
+  voiceVolume = 0.5;
+  private lastVoice = 0;
+  private voices = new Set<OscillatorNode>();
 
   /** Llamar desde un gesto del usuario. */
   unlock() {
@@ -33,8 +36,16 @@ class Sound {
     }
   }
 
-  configure(o: { enabled: boolean; volume: number; ambient: boolean; ambientVolume: number }) {
+  configure(o: {
+    enabled: boolean;
+    volume: number;
+    ambient: boolean;
+    ambientVolume: number;
+    voiceVolume?: number;
+  }) {
     this.enabled = o.enabled;
+    if (o.voiceVolume !== undefined) this.voiceVolume = o.voiceVolume;
+    if (!o.enabled) this.stopVoice();
     this.volume = o.volume;
     this.ambientVolume = o.ambientVolume;
     this.ambientWanted = o.ambient;
@@ -89,6 +100,49 @@ class Sound {
         tone(220, 0, 0.2, 'sawtooth', 0.06);
         break;
     }
+  }
+
+  /**
+   * Murmullo estilizado de voz («blblbl»): una sílaba breve y suave cada varias letras,
+   * con tono propio por personaje. Nunca una nota por letra.
+   */
+  voice(pitch: number, wave: OscillatorType = 'triangle') {
+    if (!this.ctx || !this.master || !this.enabled || this.voiceVolume <= 0) return;
+    const now = this.ctx.currentTime;
+    if (now - this.lastVoice < 0.075) return;
+    this.lastVoice = now;
+    const f = pitch * (0.88 + Math.random() * 0.26);
+    const dur = 0.05 + Math.random() * 0.035;
+    const o = this.ctx.createOscillator();
+    const band = this.ctx.createBiquadFilter();
+    const g = this.ctx.createGain();
+    o.type = wave;
+    o.frequency.setValueAtTime(f, now);
+    o.frequency.linearRampToValueAtTime(f * (0.9 + Math.random() * 0.2), now + dur);
+    band.type = 'bandpass';
+    band.frequency.value = f * 3.2;
+    band.Q.value = 1.4;
+    const peak = 0.07 * this.voiceVolume;
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(peak, now + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    o.connect(band).connect(g).connect(this.master);
+    o.start(now);
+    o.stop(now + dur + 0.02);
+    this.voices.add(o);
+    o.onended = () => this.voices.delete(o);
+  }
+
+  /** Corta cualquier murmullo en curso (texto completado, omitido, silencio o espera). */
+  stopVoice() {
+    for (const o of this.voices) {
+      try {
+        o.stop();
+      } catch {
+        /* ya detenido */
+      }
+    }
+    this.voices.clear();
   }
 
   private syncAmbient() {

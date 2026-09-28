@@ -6,7 +6,7 @@ import { allSettled, upcoming } from '../engine/game';
 import { mood } from '../engine/needs';
 import { clock } from '../engine/time';
 import type { GameEvent, GameState, PauseKind } from '../engine/types';
-import { CallPanel, markCallStart, PhonePanel } from './panels/CallPanel';
+import { CallPanel, IncomingCall, markCallStart, PhonePanel } from './panels/CallPanel';
 import { BoardPanel } from './panels/BoardPanel';
 import { NotebookPanel, ManualPanel } from './panels/NotebookPanel';
 import { PausePanel } from './panels/PausePanel';
@@ -20,6 +20,7 @@ import { TutorialHint, tutorialFocus } from './panels/Tutorial';
 import { GuardiaOS } from './os/GuardiaOS';
 import { SecondScreen } from './os/SecondScreen';
 import { Scene, type SceneTarget } from './scene/Scene';
+import { artInfo, type ArtId } from '../content/station';
 import { Panel } from './common/Panel';
 
 export type PanelState =
@@ -87,6 +88,22 @@ export function Desk() {
   const store = useStore();
   const game = app.mode === 'practice' ? (app.practice?.game ?? null) : app.campaign;
   const [panel, setPanel] = useState<PanelState | null>(null);
+  // La llamada es una capa propia: contraerla no mueve la escena ni cierra la conversación.
+  const [callCollapsed, setCallCollapsed] = useState(false);
+  const mobile = useMobile();
+  const reportReady = Boolean(
+    app.justClosed &&
+    game?.cases[app.justClosed]?.status === 'closed' &&
+    game.call?.caseId !== app.justClosed,
+  );
+  useEffect(() => {
+    // Un solo cuadro a la vez: el informe no se apila sobre GuardiaOS u otro panel.
+    if (reportReady) setPanel(null);
+  }, [reportReady]);
+  useEffect(() => {
+    // En móvil, abrir una herramienta contrae la llamada a una barra; cerrar la vuelve a mostrar.
+    if (mobile) setCallCollapsed(Boolean(panel));
+  }, [panel, mobile]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [live, setLive] = useState('');
   const [pose, setPose] = useState<'coffee' | null>(null);
@@ -149,6 +166,13 @@ export function Desk() {
     return () => clearTimeout(t);
   }, [pose]);
 
+  const answer = useCallback(() => {
+    sound.play('click');
+    store.dispatch({ type: 'answerCall' });
+    if (store.game?.call) markCallStart(store.game.call.eventKey);
+    setCallCollapsed(false);
+  }, [store]);
+
   const onScene = useCallback(
     (t: SceneTarget, el: HTMLElement) => {
       const g = store.game;
@@ -160,9 +184,9 @@ export function Desk() {
         case 'phone':
           if (g?.incoming && !g.call) {
             sound.play('click');
-            store.dispatch({ type: 'answerCall' });
-            if (store.game?.call) markCallStart(store.game.call.eventKey);
-          } else if (!g?.call) open({ kind: 'phone' }, el);
+            answer();
+          } else if (g?.call) setCallCollapsed(false);
+          else open({ kind: 'phone' }, el);
           return;
         case 'board':
           return open({ kind: 'board' }, el);
@@ -186,7 +210,7 @@ export function Desk() {
           return;
       }
     },
-    [open, store],
+    [open, store, answer],
   );
 
   // Escape cierra el panel abierto (los diálogos internos lo detienen antes).
@@ -323,11 +347,24 @@ export function Desk() {
         </button>
       </header>
 
-      {inCall && <CallPanel game={game} collapsed={Boolean(panel)} onExpand={close} />}
+      {inCall && (
+        <CallPanel
+          game={game}
+          collapsed={callCollapsed}
+          onToggle={() => {
+            if (callCollapsed && mobile) setPanel(null);
+            setCallCollapsed((c) => !c);
+          }}
+          onTool={(tool, el) => open({ kind: tool }, el)}
+        />
+      )}
+      {!inCall && game.incoming && <IncomingCall game={game} onAnswer={answer} />}
 
       {panel && <div className="scrim" onClick={close} />}
       {panel && (
-        <div className={`overlay ${inCall ? 'with-call' : ''}`}>
+        <div
+          className={`overlay ${inCall && !callCollapsed ? 'with-call' : ''} ${(inCall && callCollapsed) || (!inCall && game.incoming) ? 'with-pill' : ''}`}
+        >
           {panel.kind === 'os' && <GuardiaOS game={game} onClose={close} dual={dual} />}
           {panel.kind === 'second' && <SecondScreen game={game} onClose={close} />}
           {panel.kind === 'board' && <BoardPanel game={game} onClose={close} />}
@@ -345,41 +382,50 @@ export function Desk() {
         </div>
       )}
 
-      {app.justClosed && game.cases[app.justClosed]?.status === 'closed' && (
-        <Panel title="Informe del expediente" onClose={() => store.dismissReport()} modal wide>
-          <ReportPanel game={game} caseId={app.justClosed} />
-        </Panel>
-      )}
+      {app.justClosed &&
+        game.cases[app.justClosed]?.status === 'closed' &&
+        game.call?.caseId !== app.justClosed && (
+          <Panel title="Informe del expediente" onClose={() => store.dismissReport()} modal wide>
+            <ReportPanel game={game} caseId={app.justClosed} />
+          </Panel>
+        )}
 
       {practice && <TutorialHint game={game} panel={panel} />}
 
       <nav className="mobile-nav" aria-label="Objetos del puesto">
-        <button
-          type="button"
-          onClick={(e) => onScene('phone', e.currentTarget)}
-          className={game.incoming ? 'ringing' : ''}
-        >
-          {game.incoming ? 'Atender' : 'Teléfono'}
-        </button>
-        <button type="button" onClick={(e) => open({ kind: 'os' }, e.currentTarget)}>
-          Monitor
-        </button>
-        {dual && (
-          <button type="button" onClick={(e) => open({ kind: 'second' }, e.currentTarget)}>
-            Correo/Hist.
-          </button>
-        )}
-        <button type="button" onClick={(e) => open({ kind: 'board' }, e.currentTarget)}>
-          Pizarra
-        </button>
-        <button type="button" onClick={(e) => open({ kind: 'notebook' }, e.currentTarget)}>
-          Cuaderno
-        </button>
-        {!practice && (
-          <button type="button" onClick={(e) => open({ kind: 'pause' }, e.currentTarget)}>
-            Pausas
-          </button>
-        )}
+        {MOBILE_ITEMS.filter(
+          (it) => (it.target !== 'monitor2' || dual) && (!it.campaignOnly || !practice),
+        ).map((it) => {
+          const label =
+            it.target === 'phone'
+              ? game.incoming && !inCall
+                ? 'Atender'
+                : inCall
+                  ? 'En llamada'
+                  : 'Teléfono'
+              : it.label;
+          return (
+            <button
+              key={it.target}
+              type="button"
+              className={it.target === 'phone' && game.incoming && !inCall ? 'ringing' : ''}
+              onClick={(e) =>
+                it.target === 'pauses'
+                  ? open({ kind: 'pause' }, e.currentTarget)
+                  : onScene(it.target, e.currentTarget)
+              }
+            >
+              {it.art ? (
+                <img src={artInfo(it.art).file} alt="" />
+              ) : (
+                <span className="mn-icon" aria-hidden="true">
+                  ⏸
+                </span>
+              )}
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <div className="sr-only" role="status" aria-live="polite">
@@ -394,4 +440,36 @@ export function Desk() {
       </div>
     </div>
   );
+}
+
+/** Composición móvil propia: cada objeto con su ilustración y un área táctil amplia. */
+const MOBILE_ITEMS: { target: SceneTarget | 'pauses'; label: string; art?: ArtId; campaignOnly?: boolean }[] =
+  [
+    { target: 'phone', label: 'Teléfono', art: 'telephone-base' },
+    { target: 'monitor', label: 'Monitor', art: 'monitor' },
+    { target: 'monitor2', label: 'Correo e historial', art: 'monitor' },
+    { target: 'board', label: 'Pizarra', art: 'corkboard' },
+    { target: 'notebook', label: 'Cuaderno', art: 'notebook' },
+    { target: 'ticket', label: 'Ticket', art: 'ticket-paper' },
+    { target: 'memo', label: 'Avisos', art: 'memo-paper' },
+    { target: 'mug', label: 'Café', art: 'coffee-mug', campaignOnly: true },
+    { target: 'snack', label: 'Comer', art: 'snack', campaignOnly: true },
+    { target: 'cube', label: 'Cubo', art: 'rubik-cube' },
+    { target: 'ball', label: 'Pelota', art: 'stress-ball' },
+    { target: 'manual', label: 'Manual', art: 'manual' },
+    { target: 'pauses', label: 'Otras pausas', campaignOnly: true },
+  ];
+
+/** Composición móvil: mismo criterio que la hoja de estilos. */
+function useMobile(): boolean {
+  const q = '(max-width: 760px), (max-height: 520px) and (max-width: 1000px)';
+  const [m, setM] = useState(() => window.matchMedia?.(q).matches ?? false);
+  useEffect(() => {
+    const mq = window.matchMedia?.(q);
+    if (!mq) return;
+    const on = () => setM(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return m;
 }

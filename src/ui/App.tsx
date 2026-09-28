@@ -22,6 +22,7 @@ function Root() {
       volume: prefs.volume,
       ambient: prefs.ambient,
       ambientVolume: prefs.ambientVolume,
+      voiceVolume: prefs.voiceVolume,
     });
   }, [prefs]);
 

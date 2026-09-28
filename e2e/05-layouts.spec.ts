@@ -24,6 +24,8 @@ for (const size of SIZES) {
     await expect(phone).toBeInViewport();
     await phone.click();
     await expect(page.locator('aside.call')).toBeInViewport();
+    // En móvil la conversación se contrae para usar las herramientas sin perder su estado.
+    if (mobile) await page.getByRole('button', { name: 'Contraer la llamada' }).click();
     const monitor = mobile
       ? page.locator('.mobile-nav').getByRole('button', { name: 'Monitor' })
       : page.getByRole('button', { name: /Monitor: abrir GuardiaOS/ });

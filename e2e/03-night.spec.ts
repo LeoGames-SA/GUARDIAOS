@@ -23,7 +23,7 @@ async function solve001Job(page: Page) {
   const call = page.locator('aside.call');
   await call.getByRole('button', { name: '¿Podés probar de nuevo y decirme qué pasa?' }).click();
   await expect(call).toContainText(/salió/);
-  await call.getByRole('button', { name: 'Cortar la llamada' }).click();
+  await call.getByRole('button', { name: 'Cortar', exact: true }).click();
   await closeCase(page, 'Resuelto y verificado');
 }
 
@@ -119,7 +119,7 @@ test('noche completa: correo/permisos, alerta/aplicación, resumen, mejora y rej
 test('dos expedientes activos: reloj común, pruebas separadas y cambio de foco', async ({ page }) => {
   await startGuard(page, 7);
   await answer(page);
-  await page.locator('aside.call').getByRole('button', { name: 'Cortar la llamada' }).click();
+  await page.locator('aside.call').getByRole('button', { name: 'Cortar', exact: true }).click();
   await waitUntil(page, '23:20');
   await take(page, '002');
   await expect(page.locator('.case-chip')).toHaveCount(2);
@@ -154,7 +154,7 @@ test('recargar a mitad de guardia y de práctica conserva el estado', async ({ p
     .click();
   await expect(page.locator('.hud-clock')).toContainText('23:01');
   await expect(page.locator('aside.call')).toContainText('Elena');
-  await page.getByRole('button', { name: 'Pizarra de pruebas' }).click();
+  await page.locator('aside.call').getByRole('button', { name: 'Pizarra', exact: true }).click();
   await expect(page.locator('.note')).toHaveCount(1);
   await closePanel(page);
 
@@ -180,7 +180,7 @@ test('Elena vuelve a llamar: tranquilizar una vez, citar evidencia real y plazo 
   await startGuard(page, 7);
   await answer(page);
   const call = page.locator('aside.call');
-  await call.getByRole('button', { name: 'Cortar la llamada' }).click();
+  await call.getByRole('button', { name: 'Cortar', exact: true }).click();
   await openMonitor(page);
   const svc = await openApp(page, 'Servicios');
   await runProbe(svc, 'Consultar el servicio «Cola de impresión»');
@@ -190,14 +190,16 @@ test('Elena vuelve a llamar: tranquilizar una vez, citar evidencia real y plazo 
   await expect(page.getByRole('button', { name: /Teléfono: está sonando/ })).toBeVisible();
   await answer(page);
   await expect(call).toContainText('¿Hay alguna novedad?');
+  await call.getByRole('button', { name: 'Tranquilizar…' }).click();
   await call.getByRole('button', { name: /Entiendo la urgencia/ }).click();
   await expect(call).toContainText('gracias por avisar');
+  await call.getByRole('button', { name: 'Tranquilizar…' }).click();
   await call.getByRole('button', { name: /Ya comprobé que/ }).click();
   await call.getByRole('button', { name: /servicio de cola está detenido/ }).click();
   await expect(call).toContainText('ya me dijiste');
   // No se ofrece «ya está resuelto» ni «causa probable» sin respaldo en la pizarra.
   await expect(call.getByRole('button', { name: /causa probable/ })).toHaveCount(0);
-  await call.getByRole('button', { name: 'Cortar la llamada' }).click();
+  await call.getByRole('button', { name: 'Cortar', exact: true }).click();
   await page.getByRole('button', { name: 'Pausa', exact: true }).click();
   for (let i = 0; i < 3; i++) {
     await page.locator('.pauses li', { hasText: 'Comer algo' }).getByRole('button').click();

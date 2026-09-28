@@ -152,6 +152,8 @@ export interface CaseDef {
   devices: string[];
   learned: string;
   practice?: boolean;
+  /** Cierre humano por el canal del caso (opcional; hay textos por defecto). */
+  farewell?: { nico: string; warm: string; costly: string; cold: string; mail?: string };
 }
 
 export interface NightDef {
@@ -250,6 +252,12 @@ export interface CallState {
   lines: CallLine[];
   /** Id de callback para la regla de «una tranquilidad por evento». */
   eventKey: string;
+  /** En espera: el auricular está en la base y se puede investigar. Opcional por compatibilidad. */
+  held?: boolean;
+  /** Minuto en que se puso en espera (para comunicar la demora). */
+  heldSince?: Minute;
+  /** La conversación terminó (despedida dicha); falta colgar. */
+  ended?: boolean;
 }
 
 export interface IncomingCall {
@@ -313,6 +321,8 @@ export type Action =
   | { type: 'answerCall' }
   | { type: 'declineCall' }
   | { type: 'hangUp' }
+  | { type: 'hold' }
+  | { type: 'resume' }
   | { type: 'callContact'; caseId: string }
   | { type: 'reassure'; kind: 'urgency' | 'evidence' | 'probable'; noteId?: string }
   | { type: 'take'; caseId: string }

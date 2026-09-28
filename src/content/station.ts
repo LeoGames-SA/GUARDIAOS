@@ -60,42 +60,70 @@ export type SlotId =
   | 'memo'
   | 'snack';
 
+/**
+ * Encuadre abierto: objetos a ~80 % del tamaño anterior, separados entre sí y
+ * completos dentro del fondo (borde frontal de la mesa ≈ y 880). El auricular
+ * conserva la calibración sobre las horquillas escalada con la base.
+ */
+const BASE = { x: 64, y: 566, w: 330 };
+const HANDSET_CAL = { dx: 50 / 400, dy: 12 / 400, w: 115 / 400 }; // relativo al ancho de la base
+
 const common: Record<Exclude<SlotId, 'monitor' | 'monitor2' | 'plant' | 'keyboard' | 'mouse'>, Placement> = {
-  corkboard: { art: 'corkboard', x: 78, y: 34, w: 690, z: 10 },
-  lamp: { art: 'desk-lamp', x: -26, y: 318, w: 300, z: 22 },
-  phoneBase: { art: 'telephone-base', x: 60, y: 522, w: 400, z: 40 },
-  // Encastre calibrado sobre las dos horquillas de la base (ver docs/ARTE.md).
-  handset: { art: 'telephone-handset', x: 110, y: 534, w: 115, z: 41 },
-  mug: { art: 'coffee-mug', x: 478, y: 566, w: 142, z: 42 },
-  cube: { art: 'rubik-cube', x: 640, y: 612, w: 92, z: 43 },
-  ball: { art: 'stress-ball', x: 744, y: 650, w: 78, z: 44 },
-  penHolder: { art: 'pen-holder', x: 770, y: 470, w: 84, z: 30 },
-  notebook: { art: 'notebook', x: 388, y: 712, w: 540, z: 50 },
-  manual: { art: 'manual', x: 1488, y: 826, w: 190, z: 48 },
-  ticket: { art: 'ticket-paper', x: 214, y: 820, w: 176, z: 51, rotate: -6 },
-  memo: { art: 'memo-paper', x: 842, y: 586, w: 96, z: 45, rotate: 8 },
-  snack: { art: 'snack', x: 6, y: 780, w: 196, z: 45 },
+  corkboard: { art: 'corkboard', x: 112, y: 44, w: 604, z: 10 },
+  lamp: { art: 'desk-lamp', x: -14, y: 336, w: 246, z: 22 },
+  phoneBase: { art: 'telephone-base', ...BASE, z: 40 },
+  handset: {
+    art: 'telephone-handset',
+    x: Math.round(BASE.x + HANDSET_CAL.dx * BASE.w),
+    y: Math.round(BASE.y + HANDSET_CAL.dy * BASE.w),
+    w: Math.round(HANDSET_CAL.w * BASE.w),
+    z: 41,
+  },
+  mug: { art: 'coffee-mug', x: 432, y: 584, w: 116, z: 42 },
+  cube: { art: 'rubik-cube', x: 570, y: 626, w: 76, z: 43 },
+  ball: { art: 'stress-ball', x: 664, y: 652, w: 64, z: 44 },
+  penHolder: { art: 'pen-holder', x: 716, y: 506, w: 68, z: 30 },
+  notebook: { art: 'notebook', x: 430, y: 700, w: 400, z: 50 },
+  manual: { art: 'manual', x: 1512, y: 606, w: 146, z: 28 },
+  ticket: { art: 'ticket-paper', x: 858, y: 806, w: 124, z: 51, rotate: -8 },
+  memo: { art: 'memo-paper', x: 770, y: 606, w: 82, z: 45, rotate: 8 },
+  snack: { art: 'snack', x: 1466, y: 800, w: 172, z: 45 },
 };
 
 export const LAYOUTS: Record<'single' | 'dual', Partial<Record<SlotId, Placement>>> = {
   single: {
     ...common,
-    plant: { art: 'plant', x: 1512, y: 384, w: 176, z: 20 },
-    monitor: { art: 'monitor', x: 880, y: 168, w: 720, z: 32 },
-    keyboard: { art: 'keyboard', x: 976, y: 690, w: 520, z: 46 },
-    mouse: { art: 'mouse', x: 1512, y: 712, w: 100, z: 47 },
+    plant: { art: 'plant', x: 1528, y: 402, w: 150, z: 20 },
+    monitor: { art: 'monitor', x: 912, y: 196, w: 600, z: 32 },
+    keyboard: { art: 'keyboard', x: 992, y: 690, w: 440, z: 46 },
+    mouse: { art: 'mouse', x: 1452, y: 716, w: 84, z: 47 },
   },
   dual: {
     ...common,
-    monitor: { art: 'monitor', x: 792, y: 190, w: 606, z: 32 },
-    monitor2: { art: 'monitor', x: 1392, y: 318, w: 276, z: 31 },
-    keyboard: { art: 'keyboard', x: 862, y: 688, w: 480, z: 46 },
-    mouse: { art: 'mouse', x: 1372, y: 716, w: 96, z: 47 },
+    monitor: { art: 'monitor', x: 856, y: 206, w: 540, z: 32 },
+    monitor2: { art: 'monitor', x: 1404, y: 326, w: 250, z: 31 },
+    keyboard: { art: 'keyboard', x: 910, y: 690, w: 420, z: 46 },
+    mouse: { art: 'mouse', x: 1356, y: 716, w: 84, z: 47 },
   },
 };
 
+/**
+ * Pantalla LCD de la base, medida sobre el dibujo (fracciones de la base):
+ * esquina superior izquierda, superior derecha e inferior izquierda.
+ * Se usa como transformación afín para que el texto siga la perspectiva.
+ */
+/** Aviso de llamada anclado sobre la base del teléfono. */
+export const PHONE_BADGE = { x: BASE.x + 64, y: BASE.y - 40 };
+
+export const PHONE_LCD = { tl: [0.481, 0.124], tr: [0.831, 0.164], bl: [0.465, 0.268] } as const;
+
 /** Poses de mano: decoración ligada a acciones, nunca cursor. Ocultan su duplicado. */
+/**
+ * Escala medida: entre cápsulas del auricular en la mano hay 1,03× el ancho de la pose; el
+ * auricular apoyado mide ~1,3× su propio ancho. Cerca de cámara se agranda ~30 %. El brazo está
+ * cortado en el lienzo, por eso las poses se anclan al borde inferior de la escena.
+ */
 export const POSES = {
-  phone: { art: 'hand-phone' as ArtId, x: 36, y: 520, w: 250, z: 70, hides: 'handset' as SlotId },
-  coffee: { art: 'hand-coffee' as ArtId, x: 440, y: 520, w: 250, z: 70, hides: 'mug' as SlotId },
+  phone: { art: 'hand-phone' as ArtId, x: -10, y: 700, w: 160, z: 70, hides: 'handset' as SlotId },
+  coffee: { art: 'hand-coffee' as ArtId, x: 360, y: 748, w: 236, z: 70, hides: 'mug' as SlotId },
 };

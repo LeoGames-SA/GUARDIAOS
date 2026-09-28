@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT, QA_SEEDS } from '../src/content';
 import { hasProbableCause, readHypothesis } from '../src/engine/board';
-import { createGame, step } from '../src/engine/game';
+import { createGame, HOLD_PATIENCE, step } from '../src/engine/game';
 import { PAUSES } from '../src/engine/needs';
 import { caseReport, nightSummary } from '../src/engine/report';
 import type { Action, GameEvent, GameState } from '../src/engine/types';
@@ -371,7 +371,7 @@ describe('práctica y resumen', () => {
   it('la mejora se desbloquea con dos expedientes verificados', () => {
     let s = answered(QA_SEEDS.job);
     s = run(s, p1('t-queue'), p1('i-cancel-job'), p1('v-retry'), { type: 'close', caseId: 'c001' }).state;
-    s = run(s, { type: 'pause', kind: 'eat' }, { type: 'take', caseId: 'c002' }).state;
+    s = run(s, { type: 'hangUp' }, { type: 'pause', kind: 'eat' }, { type: 'take', caseId: 'c002' }).state;
     s = run(
       s,
       probe('c002', 't-requests'),
@@ -388,5 +388,76 @@ describe('práctica y resumen', () => {
     expect(sum.resolved).toBe(2);
     expect(sum.unlockSecondMonitor).toBe(true);
     expect(sum.reports.find((r) => r.caseId === 'c003')!.outcome).toBe('unresolved');
+  });
+});
+
+describe('llamadas: espera, retomar y despedida', () => {
+  it('poner en espera deja una frase, bloquea preguntas y retomar continúa el diálogo', () => {
+    let s = answered(QA_SEEDS.job);
+    const before = s.call!.lines.length;
+    s = run(s, { type: 'hold' }).state;
+    expect(s.call!.held).toBe(true);
+    expect(s.call!.lines.slice(before).map((l) => l.speaker)).toEqual(['nico', 'contact']);
+    expect(s.call!.lines[before]!.text).toContain('espera');
+    expect(step(CONTENT, s, p1('q-since')).events[0]).toMatchObject({ type: 'blocked' });
+    // Investigar en espera sí se puede.
+    s = run(s, p1('t-queue')).state;
+    s = run(s, { type: 'resume' }).state;
+    expect(s.call!.held).toBe(false);
+    expect(s.cases.c001!.status).toBe('active');
+    expect(s.call!.lines.at(-1)!.text).toBe('Sí, acá estoy.');
+    s = run(s, p1('q-since')).state; // la conversación sigue, no se reinicia
+    expect(s.call!.lines[0]!.text).toContain('habla Nicolás');
+  });
+
+  it('una espera larga en minutos simulados impacienta (una vez) y se comunica', () => {
+    let s = answered(QA_SEEDS.job);
+    const trust = s.cases.c001!.trust;
+    s = run(
+      s,
+      { type: 'hold' },
+      p1('t-events-srv'),
+      p1('t-events-pc'),
+      p1('t-queue'),
+      p1('t-testpage'),
+      p1('t-ping-name'),
+      p1('t-ping-ip'),
+      p1('t-panel'),
+    ).state;
+    expect(s.minute).toBeGreaterThan(HOLD_PATIENCE);
+    s = run(s, { type: 'resume' }).state;
+    expect(s.cases.c001!.trust).toBe(trust - 1);
+    expect(s.history.at(-1)!.result).toContain('se impacientó');
+  });
+
+  it('cerrar por teléfono: despedida en la llamada, que queda abierta hasta colgar; sin duplicar el cierre', () => {
+    let s = answered(QA_SEEDS.job);
+    s = run(s, p1('t-queue'), p1('i-cancel-job'), p1('v-retry'), { type: 'close', caseId: 'c001' }).state;
+    expect(s.cases.c001!.status).toBe('closed');
+    expect(s.call?.ended).toBe(true);
+    expect(s.call!.lines.at(-2)!.speaker).toBe('nico');
+    expect(s.call!.lines.at(-1)!.text).toMatch(/gracias/i);
+    expect(step(CONTENT, s, { type: 'close', caseId: 'c001' }).events[0]).toMatchObject({ type: 'blocked' });
+    const minute = s.minute;
+    s = run(s, { type: 'hangUp' }).state;
+    expect(s.call).toBeNull();
+    expect(s.minute).toBe(minute);
+    expect(s.history.filter((h) => h.action === 'Cerré 001')).toHaveLength(1);
+  });
+
+  it('cerrar por correo agrega un mensaje de cierre coherente con el canal', () => {
+    let s = answered(QA_SEEDS.job);
+    s = run(s, { type: 'hangUp' }, { type: 'wait' }, { type: 'take', caseId: 'c002' }).state;
+    s = run(
+      s,
+      probe('c002', 't-requests'),
+      probe('c002', 'i-add-editors'),
+      probe('c002', 'i-renew-session'),
+      probe('c002', 'v-try'),
+      { type: 'close', caseId: 'c002' },
+    ).state;
+    const last = s.cases.c002!.messages.at(-1)!;
+    expect(last.outgoing).toBe(true);
+    expect(last.subject).toContain('[resuelto]');
   });
 });

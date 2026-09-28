@@ -77,9 +77,13 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
     const ro = new ResizeObserver(measure);
     ro.observe(root);
     window.addEventListener('resize', measure);
+    // La apertura escala el panel: al terminar la animación se vuelve a medir.
+    const panel = root.closest('.panel');
+    panel?.addEventListener('animationend', measure);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', measure);
+      panel?.removeEventListener('animationend', measure);
     };
   }, [cs, hypId, linkKey]);
 
