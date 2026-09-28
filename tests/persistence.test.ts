@@ -78,6 +78,25 @@ describe('guardado', () => {
     expect(loadProfile(st)).toMatchObject({ status: 'ok', data: { cube: { state: SOLVED } } });
   });
 
+  it('el historial del cubo acepta capas del medio y descarta movimientos desconocidos', () => {
+    const st = memory();
+    const state = applyMove(applyMove(SOLVED, 'R'), 'M');
+    write(st, 'profile', { ...DEFAULT_PROFILE, cube: { state, history: ['R', 'Z', 3, 'M'], moves: 2 } });
+    expect(loadProfile(st)).toMatchObject({ status: 'ok', data: { cube: { state, history: ['R', 'M'] } } });
+  });
+
+  it('una partida guardada antes de la espera y la despedida sigue cargando', () => {
+    const st = memory();
+    const g = createGame(CONTENT, { mode: 'campaign', nightId: 'n1', seed: 7 });
+    const answered = step(CONTENT, g, { type: 'answerCall' }).state;
+    const oldCall: Record<string, unknown> = { ...answered.call! };
+    for (const k of ['held', 'heldSince', 'ended']) delete oldCall[k];
+    write(st, 'campaign', { ...answered, call: oldCall });
+    const r = loadGame(st, CONTENT);
+    expect(r.status).toBe('ok');
+    if (r.status === 'ok') expect(r.data.call?.held).toBeFalsy();
+  });
+
   it('las preferencias inválidas vuelven a valores seguros', () => {
     const st = memory();
     write(st, 'prefs', { sound: 'sí', volume: 7, motion: 'raro' });

@@ -360,8 +360,22 @@ export const Scene = memo(function Scene({
           </svg>
         )}
       </Obj>
-      <Obj slot={s('cube')} label="Cubo 3×3" target="cube" onOpen={onOpen} inert={inert} />
-      <Obj slot={s('ball')} label="Pelota antiestrés" target="ball" onOpen={onOpen} inert={inert} />
+      <Obj
+        slot={s('cube')}
+        label="Cubo 3×3"
+        target="cube"
+        onOpen={onOpen}
+        inert={inert}
+        hidden={hidden.has('cube')}
+      />
+      <Obj
+        slot={s('ball')}
+        label="Pelota antiestrés"
+        target="ball"
+        onOpen={onOpen}
+        inert={inert}
+        hidden={hidden.has('ball')}
+      />
       <Obj
         slot={s('snack')}
         label="Sándwich: comer algo · 20 min"

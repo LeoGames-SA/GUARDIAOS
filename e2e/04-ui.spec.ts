@@ -187,35 +187,71 @@ test('pausas, pelota, cubo y gato: costos visibles y efectos acotados', async ({
   );
   await page.getByRole('button', { name: /Avisos del turno/ }).click();
 
-  // Pelota: requiere apretar; segunda vez seguida rinde menos.
+  // Pelota en la mano: mantener apretado comprime, soltar la devuelve; el efecto va una vez al devolverla.
+  await page.getByRole('button', { name: 'Pelota antiestrés' }).click();
+  const ball = page.getByRole('button', { name: 'Apretar la pelota' });
+  await expect(page.locator('[data-target=ball]')).toBeHidden(); // el sprite de la mesa no se duplica
+  await ball.focus();
+  await page.keyboard.down('Space');
+  await expect(ball).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.up('Space');
+  await expect(ball).toHaveAttribute('aria-pressed', 'false');
+  const bb = (await ball.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.down();
+  await expect(ball).toHaveAttribute('aria-pressed', 'true');
+  await page.mouse.move(5, 5); // soltar fuera no la deja trabada
+  await page.mouse.up();
+  await expect(ball).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: /Devolver a la mesa.*−6/ }).click();
+  await expect(page.getByRole('region', { name: 'Resumen de la pausa' })).toContainText('Pelota antiestrés');
+  await expect(page.getByRole('button', { name: 'Pelota antiestrés' })).toBeVisible();
   await page.getByRole('button', { name: 'Pelota antiestrés' }).click();
   await page.getByRole('button', { name: 'Apretar la pelota' }).press('Space');
-  await expect(page.getByRole('button', { name: /Terminar la pausa.*−6/ })).toBeVisible();
-  await page.getByRole('button', { name: /Terminar la pausa/ }).click();
-  await closePanel(page);
-  await page.getByRole('button', { name: 'Pelota antiestrés' }).click();
-  await page.getByRole('button', { name: 'Apretar la pelota' }).press('Space');
-  await expect(page.getByRole('button', { name: /Terminar la pausa.*−1/ })).toBeVisible();
-  await closePanel(page);
+  await expect(page.getByRole('button', { name: /Devolver a la mesa.*−1/ })).toBeVisible();
+  await page.keyboard.press('Escape'); // devolver sin apretar más no suma otra pausa
+  await expect(page.getByRole('button', { name: 'Pelota antiestrés' })).toBeFocused();
 
-  // Cubo real: un giro y deshacer; el progreso se guarda.
+  // Cubo 3D: gesto sobre una pegatina gira una capa; fuera del cubo gira el objeto; teclado y deshacer.
+  const profileCube = () =>
+    page.evaluate(
+      () =>
+        (JSON.parse(localStorage.getItem('tdg.profile') ?? 'null')?.data.cube as
+          { state: string; moves: number } | undefined) ?? { state: '', moves: 0 },
+    );
   await page.getByRole('button', { name: 'Cubo 3×3' }).click();
-  await page.getByRole('button', { name: '↻ Girar horario' }).click();
-  await expect(page.getByText(/Movimientos: 1/)).toBeVisible();
+  await expect(page.locator('[data-target=cube]')).toBeHidden();
+  const canvas = page.locator('.cube-canvas');
+  await expect(page.getByText('Levantando el cubo…')).toHaveCount(0);
+  await page.waitForTimeout(500); // fin de la animación de levantar
+  const c = (await canvas.boundingBox())!;
+  const cx = c.x + c.width / 2;
+  const cy = c.y + c.height / 2;
+  await page.mouse.move(c.x + 12, c.y + 12);
+  await page.mouse.down();
+  await page.mouse.move(c.x + 160, c.y + 90, { steps: 6 });
+  await page.mouse.up();
+  expect((await profileCube()).moves).toBe(0); // girar el objeto no es un movimiento
+  await page.mouse.move(cx, cy + c.height * 0.12);
+  await page.mouse.down();
+  await page.mouse.move(cx + c.width * 0.3, cy + c.height * 0.12, { steps: 10 });
+  await page.mouse.up();
+  await expect(page.getByText(/1 movimiento$/)).toBeVisible();
+  await page.locator('.cube-stage').press('r');
+  await expect(page.getByText(/2 movimientos/)).toBeVisible();
+  await page.locator('.cube-stage').press('Control+z');
+  await expect.poll(async () => (await profileCube()).state.length).toBe(54);
   await page.getByRole('button', { name: 'Mezclar' }).click();
-  await expect(page.getByText('Sin resolver.', { exact: false })).toBeVisible();
-  const cube = await page.evaluate(
-    () => JSON.parse(localStorage.getItem('tdg.profile')!).data.cube.state as string,
-  );
-  await closePanel(page);
+  await expect(page.getByText(/Sin resolver/)).toBeVisible();
+  const cube = (await profileCube()).state;
+  await page.getByRole('button', { name: 'Devolver a la mesa' }).click();
+  await expect(page.getByRole('button', { name: 'Cubo 3×3' })).toBeFocused();
   await page.reload();
   await page
     .getByRole('button', { name: /Continuar/ })
     .first()
     .click();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('tdg.profile')!).data.cube.state)).toBe(
-    cube,
-  );
+  expect((await profileCube()).state).toBe(cube);
 
   // Gato: página local del navegador, recompensa una vez.
   await openMonitor(page);

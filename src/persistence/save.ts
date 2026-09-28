@@ -1,4 +1,4 @@
-import { isValidCube, SOLVED, type CubeState, type Move } from '../engine/cube';
+import { isMove, isValidCube, SOLVED, type CubeState, type Move } from '../engine/cube';
 import type { Content, GameState } from '../engine/types';
 
 /**
@@ -179,7 +179,7 @@ export function loadProfile(storage: StorageLike): LoadResult<Profile> {
       cube: cube
         ? {
             state: cube.state as CubeState,
-            history: (cube.history as Move[]).slice(-200),
+            history: (cube.history as unknown[]).filter(isMove).slice(-200),
             moves: isNum(cube.moves) ? cube.moves : 0,
           }
         : { ...DEFAULT_PROFILE.cube },

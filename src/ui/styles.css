@@ -2411,74 +2411,73 @@ details > summary {
 .meters small {
   color: var(--muted);
 }
-.cube-panel {
-  width: min(860px, 100%);
-}
-.cube {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.net {
-  display: grid;
-  grid-template-areas:
-    '. u . .'
-    'l f r b'
-    '. d . .';
-  gap: 6px;
-}
-.cface {
-  display: grid;
-  grid-template-columns: repeat(3, 28px);
-  gap: 2px;
-  padding: 3px;
-  background: #111;
-  border: 2px solid transparent;
-  border-radius: 6px;
-}
-.cface.sel {
-  border-color: var(--amber);
-}
-.cface span {
-  width: 28px;
-  height: 28px;
-  border-radius: 3px;
-  display: grid;
-  place-items: center;
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: #0009;
-}
-.cube-side {
-  flex: 1;
-  min-width: 240px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.cube-faces {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.cube-faces [aria-pressed='true'] {
-  border-color: var(--amber);
-}
-.ball {
-  text-align: center;
-}
-.ball-btn {
+/* Pelota: se aplasta contra la palma (origen abajo), se ensancha y oscurece al comprimir. */
+.ball-3d {
+  position: relative;
+  width: min(44vh, 70vw, 340px);
+  aspect-ratio: 1;
   background: none;
   border: 0;
-  width: 200px;
-  touch-action: manipulation;
+  padding: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.ball-btn img {
+.ball-3d:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 6px;
+  border-radius: 50%;
+}
+.ball-3d.pressed {
+  cursor: grabbing;
+}
+.ball-body {
+  position: absolute;
+  inset: 6% 6% 10%;
+  transform-origin: 50% 96%;
+  transition: transform 460ms cubic-bezier(0.3, 1.9, 0.45, 1);
+}
+.ball-body img {
   width: 100%;
-  transition: transform 90ms ease-out;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
 }
-.ball-btn.pressed img {
-  transform: scale(1.12, 0.78);
+.ball-body::after {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 30%, transparent 40%, #3a0d0060 100%);
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+  pointer-events: none;
+}
+.ball-3d.pressed .ball-body {
+  transform: scale(1.22, 0.7);
+  transition: transform 340ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.ball-3d.pressed .ball-body::after {
+  opacity: 1;
+}
+.ball-shadow {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 4%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #000a, transparent 70%);
+  transition: transform 460ms cubic-bezier(0.3, 1.9, 0.45, 1);
+}
+.ball-3d.pressed .ball-shadow {
+  transform: scaleX(1.35);
+  transition: transform 340ms ease-out;
+}
+:root[data-motion='reduced'] .ball-body,
+:root[data-motion='reduced'] .ball-shadow {
+  transition-duration: 0ms;
 }
 
 /* ------------------------------------------------------------ informe */
@@ -3453,4 +3452,112 @@ details > summary {
     flex-basis: 100%;
     margin-left: 0;
   }
+}
+
+/* ------------------------------------------------------------ Objetos en la mano */
+.held {
+  margin: auto;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  outline: none;
+  max-width: 100%;
+}
+.held-lifting {
+  animation: lift 360ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.held-returning {
+  animation: lift 300ms cubic-bezier(0.5, 0, 0.8, 0.4) reverse both;
+}
+@keyframes lift {
+  from {
+    opacity: 0.4;
+    transform: translate(var(--fx, 0), var(--fy, 0)) scale(var(--fs, 1));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+:root[data-motion='reduced'] .held {
+  animation: none;
+}
+.cube-stage {
+  position: relative;
+  width: min(62vh, 86vw, 560px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #ffe3b01f, transparent 65%);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+}
+.cube-stage:focus-visible {
+  box-shadow: 0 0 0 3px var(--focus);
+}
+.cube-stage.g-object,
+.cube-stage.g-layer {
+  cursor: grabbing;
+}
+.cube-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.cube-msg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--muted);
+  padding: 20px;
+}
+.net-mini {
+  display: grid;
+  grid-template-columns: repeat(3, 54px);
+  gap: 6px;
+  justify-content: center;
+}
+.nf {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: #111;
+  padding: 2px;
+  border-radius: 4px;
+}
+.nf span {
+  aspect-ratio: 1;
+  border-radius: 2px;
+}
+.held-bar {
+  background: #0d2530e6;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: min(640px, calc(100vw - 24px));
+}
+.held-bar .row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.held-status {
+  margin: 0;
+  font-weight: 600;
+}
+.held-help,
+.held-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
 }

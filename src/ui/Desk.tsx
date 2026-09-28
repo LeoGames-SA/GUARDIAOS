@@ -117,17 +117,26 @@ export function Desk() {
   const [noticesOpen, setNoticesOpen] = useState(false);
   const [seenNotice, setSeenNotice] = useState(0);
   const opener = useRef<HTMLElement | null>(null);
+  const openerRect = useRef<DOMRect | null>(null);
+  const restoreFocus = useRef<HTMLElement | null>(null);
+  // Tras cerrar (ya renderizado): un objeto devuelto a la mesa vuelve a ser visible y enfocable.
+  useEffect(() => {
+    const el = restoreFocus.current;
+    if (panel || !el) return;
+    restoreFocus.current = null;
+    if (document.contains(el)) el.focus();
+  }, [panel]);
   const toastId = useRef(0);
 
   const open = useCallback((p: PanelState, el?: HTMLElement | null) => {
     opener.current = el ?? (document.activeElement as HTMLElement | null);
+    openerRect.current = opener.current?.getBoundingClientRect() ?? null;
     sound.play('click');
     setPanel(p);
   }, []);
   const close = useCallback(() => {
     setPanel(null);
-    const el = opener.current;
-    if (el && document.contains(el)) el.focus();
+    restoreFocus.current = opener.current;
   }, []);
 
   // Eventos del motor → avisos, sonido y región aria-live (una vez por evento, nunca por cuadro).
@@ -305,6 +314,7 @@ export function Desk() {
             dual={dual}
             pose={pose}
             poseClass={pose ? 'sip' : undefined}
+            holding={panel?.kind === 'cube' ? ['cube'] : panel?.kind === 'ball' ? ['ball'] : undefined}
             onOpen={onScene}
             highlight={highlight}
             inert={Boolean(panel)}
@@ -476,8 +486,15 @@ export function Desk() {
           {panel.kind === 'nico' && (
             <NicoPanel game={game} onClose={close} onPause={() => setPanel({ kind: 'pause' })} />
           )}
-          {panel.kind === 'cube' && <CubePanel onClose={close} />}
-          {panel.kind === 'ball' && <BallPanel game={game} onClose={close} />}
+          {panel.kind === 'cube' && <CubePanel onClose={close} from={openerRect.current} />}
+          {panel.kind === 'ball' && (
+            <BallPanel
+              game={game}
+              onClose={close}
+              from={openerRect.current}
+              onApply={() => takePause('ball')}
+            />
+          )}
           {panel.kind === 'doc' && <DocPanel game={game} doc={panel.doc} onClose={close} />}
           {panel.kind === 'settings' && <SettingsPanel onClose={close} inGame />}
           {panel.kind === 'phone' && <PhonePanel game={game} onClose={close} />}

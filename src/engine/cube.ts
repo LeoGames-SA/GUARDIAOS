@@ -4,7 +4,10 @@
  */
 export const FACES = ['U', 'R', 'F', 'D', 'L', 'B'] as const;
 export type Face = (typeof FACES)[number];
-export type Move = `${Face}` | `${Face}'`;
+/** Capas del medio (notación estándar): M sigue a L, E sigue a D, S sigue a F. */
+export const SLICES = ['M', 'E', 'S'] as const;
+export type Slice = (typeof SLICES)[number];
+export type Move = `${Face | Slice}` | `${Face | Slice}'`;
 export type CubeState = string; // 54 caracteres, uno por pegatina
 
 type V = [number, number, number];
@@ -47,19 +50,62 @@ function rotate(v: V, axis: V, clockwise: boolean): V {
   return [s * c[0] + axis[0] * k, s * c[1] + axis[1] * k, s * c[2] + axis[2] * k];
 }
 
+const SLICE_AXIS: Record<Slice, V> = { M: FRAME.L.n, E: FRAME.D.n, S: FRAME.F.n };
+
 const permutations = new Map<Move, number[]>();
-for (const f of FACES) {
+for (const name of [...FACES, ...SLICES]) {
+  const slice = (SLICES as readonly string[]).includes(name);
+  const axis = slice ? SLICE_AXIS[name as Slice] : FRAME[name as Face].n;
   for (const clockwise of [true, false]) {
-    const axis = FRAME[f].n;
     const perm = stickers.map((_, i) => i); // perm[destino] = origen
     stickers.forEach((s, i) => {
-      if (dot(s.p, axis) !== 1) return;
+      if (dot(s.p, axis) !== (slice ? 0 : 1)) return;
       const j = indexOf.get(key(rotate(s.p, axis, clockwise), rotate(s.n, axis, clockwise)));
       if (j === undefined) throw new Error('cubo: rotación inválida');
       perm[j] = i;
     });
-    permutations.set((clockwise ? f : `${f}'`) as Move, perm);
+    permutations.set((clockwise ? name : `${name}'`) as Move, perm);
   }
+}
+
+/** Posición (cubito) y normal de cada pegatina, para dibujar el cubo en 3D. */
+export function stickerGeometry(i: number): { p: V; n: V } {
+  const s = stickers[i]!;
+  return { p: [...s.p], n: [...s.n] };
+}
+
+/**
+ * Giro de una capa expresado como rotación de +90° (o −90°) alrededor de un eje positivo
+ * x, y o z, tal como lo produce un gesto sobre el cubo 3D. `layer` es −1, 0 o 1.
+ * Convención: un giro horario de una cara con normal n es −90° alrededor de n.
+ */
+export function layerMove(axis: 0 | 1 | 2, layer: -1 | 0 | 1, sign: 1 | -1): Move {
+  const pos: Face[] = ['R', 'U', 'F'];
+  const neg: Face[] = ['L', 'D', 'B'];
+  // Las capas del medio siguen a L (−x), D (−y) y F (+z).
+  const sliceSign: Record<number, 1 | -1> = { 0: 1, 1: 1, 2: -1 };
+  let name: string;
+  let clockwise: boolean;
+  if (layer === 1) {
+    name = pos[axis]!;
+    clockwise = sign === -1;
+  } else if (layer === -1) {
+    name = neg[axis]!;
+    clockwise = sign === 1;
+  } else {
+    name = SLICES[axis]!;
+    clockwise = sign === sliceSign[axis];
+  }
+  return (clockwise ? name : `${name}'`) as Move;
+}
+
+/** Inversa de layerMove: eje, capa y sentido (+1 = +90° sobre el eje positivo). */
+export function moveLayer(move: Move): { axis: 0 | 1 | 2; layer: -1 | 0 | 1; sign: 1 | -1 } {
+  for (const axis of [0, 1, 2] as const)
+    for (const layer of [-1, 0, 1] as const)
+      for (const sign of [1, -1] as const)
+        if (layerMove(axis, layer, sign) === move) return { axis, layer, sign };
+  throw new Error(`Movimiento desconocido: ${move}`);
 }
 
 export const SOLVED: CubeState = FACES.map((f) => f.repeat(9)).join('');
@@ -74,6 +120,10 @@ export function applyMove(state: CubeState, move: Move): CubeState {
 
 export function inverse(move: Move): Move {
   return (move.endsWith("'") ? move.slice(0, 1) : `${move}'`) as Move;
+}
+
+export function isMove(m: unknown): m is Move {
+  return typeof m === 'string' && permutations.has(m as Move);
 }
 
 export function isSolved(state: CubeState): boolean {

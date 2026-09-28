@@ -1,60 +1,114 @@
-import { useState } from 'react';
-import { useStore } from '../../application/context';
+import { useEffect, useRef, useState } from 'react';
 import { artInfo } from '../../content/station';
 import type { GameState } from '../../engine/types';
-import { Panel } from '../common/Panel';
+import { Held } from './Held';
 
-/** Pelota antiestrés: compresión por mouse/teclado; el efecto sobre Nico cuesta 2 minutos y está limitado. */
-export function BallPanel({ game, onClose }: { game: GameState; onClose: () => void }) {
-  const store = useStore();
+/**
+ * Pelota antiestrés en la mano: mantener apretado la comprime, soltar la devuelve con
+ * rebote. Funciona con mouse, toque y teclado (Espacio o Enter sostenidos). El efecto sobre
+ * Nico no depende de cuánto se apriete: se aplica una sola vez, por el motor, al devolverla.
+ */
+export function BallPanel({
+  game,
+  onClose,
+  from,
+  onApply,
+}: {
+  game: GameState;
+  onClose: () => void;
+  from?: DOMRect | null;
+  onApply: () => void;
+}) {
   const [pressed, setPressed] = useState(false);
   const [squeezes, setSqueezes] = useState(0);
-  const [done, setDone] = useState<string | null>(null);
+  const pointer = useRef<number | null>(null);
   const fresh = game.lastBallAt === null || game.minute - game.lastBallAt >= 30;
+  const counts = game.mode === 'campaign' && (!game.call || game.call.held);
+
   const press = () => {
     setPressed(true);
     setSqueezes((s) => s + 1);
   };
+  const release = () => {
+    pointer.current = null;
+    setPressed(false);
+  };
+  // Nunca queda apretada: soltar fuera de la ventana o perder el foco también suelta.
+  useEffect(() => {
+    if (!pressed) return;
+    const up = () => release();
+    window.addEventListener('blur', up);
+    return () => window.removeEventListener('blur', up);
+  }, [pressed]);
+
+  const finish = (back: () => void) => {
+    if (squeezes > 0 && counts) onApply();
+    back();
+  };
+
   return (
-    <Panel title="Pelota antiestrés" onClose={onClose} style={{ width: 'min(440px,100%)' }}>
-      <div className="panel-body ball">
-        <button
-          type="button"
-          className={`ball-btn ${pressed ? 'pressed' : ''}`}
-          aria-label="Apretar la pelota"
-          onPointerDown={press}
-          onPointerUp={() => setPressed(false)}
-          onPointerLeave={() => setPressed(false)}
-          onKeyDown={(e) => {
-            if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
-              e.preventDefault();
-              press();
-            }
-          }}
-          onKeyUp={() => setPressed(false)}
-        >
-          <img src={artInfo('stress-ball').file} alt="" />
-        </button>
-        <p className="small muted">Apretones: {squeezes}</p>
-        {done ? (
-          <p>{done}</p>
-        ) : game.mode === 'campaign' ? (
+    <Held label="Pelota antiestrés en la mano" from={from} onClose={onClose} className="held-ball">
+      {(back) => (
+        <>
           <button
             type="button"
-            className="btn btn-primary btn-sm"
-            disabled={squeezes === 0 || Boolean(game.call)}
-            onClick={() => {
-              const ev = store.dispatch({ type: 'pause', kind: 'ball' }).find((e) => e.type === 'pause');
-              setDone(ev && ev.type === 'pause' ? ev.text : 'Listo.');
+            className={`ball-3d ${pressed ? 'pressed' : ''}`}
+            aria-label="Apretar la pelota"
+            aria-pressed={pressed}
+            data-autofocus
+            onPointerDown={(e) => {
+              if (pointer.current !== null) return;
+              pointer.current = e.pointerId;
+              e.currentTarget.setPointerCapture(e.pointerId);
+              press();
             }}
+            onPointerUp={release}
+            onPointerCancel={release}
+            onLostPointerCapture={release}
+            onBlur={release}
+            onKeyDown={(e) => {
+              if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+                e.preventDefault();
+                press();
+              }
+            }}
+            onKeyUp={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') release();
+            }}
+            onClick={(e) => e.preventDefault()}
           >
-            Terminar la pausa{' '}
-            <span className="cost">· 2 min · estrés {fresh ? '−6' : '−1 (hace poco que la usaste)'}</span>
+            <span className="ball-shadow" aria-hidden="true" />
+            <span className="ball-body" aria-hidden="true">
+              <img src={artInfo('stress-ball').file} alt="" draggable={false} />
+            </span>
           </button>
-        ) : (
-          <p className="small">En la práctica es sólo para apretar.</p>
-        )}
-      </div>
-    </Panel>
+          <div className="held-bar">
+            <p className="held-status" aria-live="polite">
+              {squeezes === 0
+                ? 'Mantené apretado para comprimirla'
+                : `${squeezes} ${squeezes === 1 ? 'apretón' : 'apretones'}`}
+            </p>
+            <div className="row">
+              <button type="button" className="btn btn-sm btn-primary" onClick={() => finish(back)}>
+                Devolver a la mesa
+                {counts && squeezes > 0 && (
+                  <span className="cost">
+                    {' '}
+                    · 2 min · estrés {fresh ? '−6' : '−1 (hace poco que la usaste)'}
+                  </span>
+                )}
+              </button>
+            </div>
+            <p className="held-hint small muted">
+              {game.mode === 'practice'
+                ? 'En la práctica es sólo para apretar.'
+                : counts
+                  ? 'El efecto se cuenta una vez, al devolverla, sin importar cuántas veces aprietes.'
+                  : 'Con la llamada activa no cuenta como pausa (sí con la llamada en espera).'}
+            </p>
+          </div>
+        </>
+      )}
+    </Held>
   );
 }

@@ -1,109 +1,177 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppState, useStore } from '../../application/context';
-import { faceOf, FACES, isSolved, type Face, type Move } from '../../engine/cube';
-import { Panel } from '../common/Panel';
+import { faceOf, FACES, inverse, isSolved, type Face, type Move } from '../../engine/cube';
+import type { CubeView } from './cube3d';
+import { Held } from './Held';
 
-const COLOR: Record<Face, { name: string; css: string; mark: string }> = {
-  U: { name: 'blanco', css: '#f1efe6', mark: 'B' },
-  R: { name: 'rojo', css: '#d63a2f', mark: 'R' },
-  F: { name: 'verde', css: '#2fae4f', mark: 'V' },
-  D: { name: 'amarillo', css: '#f4cf2c', mark: 'A' },
-  L: { name: 'naranja', css: '#f08a24', mark: 'N' },
-  B: { name: 'azul', css: '#2d64c8', mark: 'Z' },
+const KEYS: Record<string, string> = {
+  u: 'U',
+  r: 'R',
+  f: 'F',
+  d: 'D',
+  l: 'L',
+  b: 'B',
+  m: 'M',
+  e: 'E',
+  s: 'S',
 };
-const FACE_NAME: Record<Face, string> = {
-  U: 'Arriba',
-  R: 'Derecha',
-  F: 'Frente',
-  D: 'Abajo',
-  L: 'Izquierda',
-  B: 'Atrás',
+const CSS: Record<Face, string> = {
+  U: '#f1efe6',
+  R: '#d63a2f',
+  F: '#2fae4f',
+  D: '#f4cf2c',
+  L: '#f08a24',
+  B: '#2d64c8',
 };
 
-/** Cubo 3×3 real en red 2D: giros legales, deshacer, mezclar. El progreso se guarda en el perfil. */
-export function CubePanel({ onClose }: { onClose: () => void }) {
+/**
+ * Cubo 3×3 en la mano: se gira entero arrastrando fuera de él y por capas arrastrando una
+ * pegatina. El dibujo 3D se carga al levantarlo y se libera al devolverlo. El estado vive
+ * en el perfil (motor del cubo), así que cada giro confirmado queda guardado.
+ */
+export function CubePanel({ onClose, from }: { onClose: () => void; from?: DOMRect | null }) {
   const { profile } = useAppState();
   const store = useStore();
-  const [face, setFace] = useState<Face>('F');
   const cube = profile.cube;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const viewRef = useRef<CubeView | null>(null);
+  const latest = useRef(cube.state);
+  latest.current = cube.state;
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [gesture, setGesture] = useState<'layer' | 'object' | null>(null);
+  const [help, setHelp] = useState(false);
   const solved = isSolved(cube.state);
-  const turn = (m: Move) => store.cubeMove(m);
-  const grid = (f: Face) => (
-    <button
-      type="button"
-      className={`cface cface-${f} ${face === f ? 'sel' : ''}`}
-      aria-pressed={face === f}
-      aria-label={`Cara ${FACE_NAME[f]}`}
-      onClick={() => setFace(f)}
-    >
-      {faceOf(cube.state, f).map((c, i) => {
-        const col = COLOR[c as Face];
-        return (
-          <span key={i} style={{ background: col.css }} title={col.name}>
-            {col.mark}
-          </span>
-        );
-      })}
-    </button>
-  );
+
+  useEffect(() => {
+    let cancelled = false;
+    import('./cube3d')
+      .then(({ createCubeView }) => {
+        const canvas = canvasRef.current;
+        if (cancelled || !canvas) return;
+        viewRef.current = createCubeView(canvas, {
+          state: latest.current,
+          reduced: document.documentElement.dataset.motion === 'reduced',
+          onMove: (m) => store.cubeMove(m),
+          onGesture: setGesture,
+        });
+        setStatus('ready');
+      })
+      .catch(() => !cancelled && setStatus('failed'));
+    return () => {
+      cancelled = true;
+      viewRef.current?.dispose();
+      viewRef.current = null;
+    };
+  }, [store]);
+
+  useEffect(() => viewRef.current?.setState(cube.state), [cube.state]);
+
+  const turn = (m: Move) => {
+    const v = viewRef.current;
+    if (!v) return store.cubeMove(m);
+    if (!v.busy()) void v.turn(m);
+  };
+  const undo = () => {
+    const last = cube.history.at(-1);
+    const v = viewRef.current;
+    if (!last) return;
+    if (!v) return store.cubeUndo();
+    if (!v.busy()) void v.turn(inverse(last), false).then(() => store.cubeUndo());
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      return undo();
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = KEYS[e.key.toLowerCase()];
+    if (k) {
+      e.preventDefault();
+      return turn((e.shiftKey ? `${k}'` : k) as Move);
+    }
+    const arrows: Record<string, [number, number]> = {
+      ArrowLeft: [-26, 0],
+      ArrowRight: [26, 0],
+      ArrowUp: [0, -26],
+      ArrowDown: [0, 26],
+    };
+    const a = arrows[e.key];
+    if (a && viewRef.current) {
+      e.preventDefault();
+      viewRef.current.rotateObject(a[0], a[1]);
+    }
+  };
+
   return (
-    <Panel title="Cubo 3×3" onClose={onClose} className="cube-panel">
-      <div className="panel-body cube">
-        <div className="net" aria-label="Red del cubo">
-          <div style={{ gridArea: 'u' }}>{grid('U')}</div>
-          <div style={{ gridArea: 'l' }}>{grid('L')}</div>
-          <div style={{ gridArea: 'f' }}>{grid('F')}</div>
-          <div style={{ gridArea: 'r' }}>{grid('R')}</div>
-          <div style={{ gridArea: 'b' }}>{grid('B')}</div>
-          <div style={{ gridArea: 'd' }}>{grid('D')}</div>
-        </div>
-        <div className="cube-side">
-          <p>
-            Cara elegida: <b>{FACE_NAME[face]}</b>
-          </p>
-          <div className="row">
-            <button type="button" className="btn" onClick={() => turn(face)}>
-              ↻ Girar horario
-            </button>
-            <button type="button" className="btn" onClick={() => turn(`${face}'` as Move)}>
-              ↺ Antihorario
-            </button>
+    <Held label="Cubo 3×3 en la mano" from={from} onClose={onClose} className="held-cube">
+      {(back) => (
+        <>
+          <div
+            className={`cube-stage ${gesture ? `g-${gesture}` : ''}`}
+            tabIndex={0}
+            role="application"
+            aria-label={`Cubo 3×3. ${solved ? 'Resuelto' : 'Sin resolver'}, ${cube.moves} movimientos. Letras U R F D L B M E S giran capas, Mayúscula al revés, flechas giran el cubo.`}
+            aria-describedby="cube-keys"
+            onKeyDown={onKeyDown}
+            data-autofocus
+          >
+            <canvas ref={canvasRef} className="cube-canvas" />
+            {status === 'loading' && <p className="cube-msg">Levantando el cubo…</p>}
+            {status === 'failed' && (
+              <div className="cube-msg">
+                <p>Este navegador no puede dibujar el cubo en 3D. Se puede girar con el teclado.</p>
+                <div className="net-mini" aria-hidden="true">
+                  {FACES.map((f) => (
+                    <div key={f} className={`nf nf-${f}`}>
+                      {faceOf(cube.state, f).map((c, i) => (
+                        <span key={i} style={{ background: CSS[c as Face] }} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="cube-faces" role="group" aria-label="Elegir cara">
-            {FACES.map((f) => (
-              <button
-                key={f}
-                type="button"
-                className="btn btn-sm"
-                aria-pressed={face === f}
-                onClick={() => setFace(f)}
-              >
-                {FACE_NAME[f]}
+          <div className="held-bar">
+            <p className="held-status" aria-live="polite">
+              {solved ? '¡Resuelto!' : 'Sin resolver'} · {cube.moves}{' '}
+              {cube.moves === 1 ? 'movimiento' : 'movimientos'}
+            </p>
+            <div className="row">
+              <button type="button" className="btn btn-sm" onClick={undo} disabled={!cube.history.length}>
+                Deshacer
               </button>
-            ))}
+              <button type="button" className="btn btn-sm" onClick={store.cubeScramble}>
+                Mezclar
+              </button>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={store.cubeReset}>
+                Ordenar
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                aria-expanded={help}
+                onClick={() => setHelp((h) => !h)}
+              >
+                Teclas
+              </button>
+              <button type="button" className="btn btn-sm btn-primary" onClick={back}>
+                Devolver a la mesa
+              </button>
+            </div>
+            <p id="cube-keys" className={`held-help ${help ? '' : 'sr-only'}`}>
+              Arrastrá una pegatina para girar su capa; arrastrá fuera del cubo para girarlo entero. Teclado:
+              U R F D L B y M E S giran capas (Mayús: al revés), flechas giran el cubo, Ctrl+Z deshace.
+            </p>
+            {!help && (
+              <p className="held-hint small muted" aria-hidden="true">
+                Arrastrá una pegatina para girar su capa · fuera del cubo para girarlo entero
+              </p>
+            )}
           </div>
-          <div className="row wrap">
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={store.cubeUndo}
-              disabled={!cube.history.length}
-            >
-              Deshacer
-            </button>
-            <button type="button" className="btn btn-sm" onClick={store.cubeScramble}>
-              Mezclar
-            </button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={store.cubeReset}>
-              Ordenar de fábrica
-            </button>
-          </div>
-          <p className="small muted" aria-live="polite">
-            {solved ? '¡Resuelto!' : 'Sin resolver.'} Movimientos: {cube.moves}. Jugar al cubo no consume
-            minutos ni cambia a Nico; se guarda al salir.
-          </p>
-        </div>
-      </div>
-    </Panel>
+        </>
+      )}
+    </Held>
   );
 }
