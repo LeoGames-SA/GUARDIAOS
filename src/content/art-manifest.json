@@ -1,0 +1,320 @@
+{
+  "background": {
+    "file": "assets/background.webp",
+    "width": 1672,
+    "height": 941,
+    "bytes": 204240,
+    "crop": {
+      "left": 0,
+      "top": 0,
+      "width": 1672,
+      "height": 941
+    },
+    "scale": 1
+  },
+  "monitor": {
+    "file": "assets/monitor.webp",
+    "width": 1200,
+    "height": 915,
+    "bytes": 120366,
+    "crop": {
+      "left": 179,
+      "top": 65,
+      "width": 1201,
+      "height": 916
+    },
+    "screen": {
+      "x": 0.184,
+      "y": 0.1146,
+      "w": 0.6528,
+      "h": 0.5611
+    },
+    "scale": 0.9992
+  },
+  "telephone-base": {
+    "file": "assets/telephone-base.webp",
+    "width": 620,
+    "height": 424,
+    "bytes": 63128,
+    "crop": {
+      "left": 95,
+      "top": 51,
+      "width": 1401,
+      "height": 957
+    },
+    "scale": 0.4425
+  },
+  "telephone-handset": {
+    "file": "assets/telephone-handset.webp",
+    "width": 260,
+    "height": 438,
+    "bytes": 21946,
+    "crop": {
+      "left": 101,
+      "top": 59,
+      "width": 860,
+      "height": 1448
+    },
+    "scale": 0.3023
+  },
+  "keyboard": {
+    "file": "assets/keyboard.webp",
+    "width": 760,
+    "height": 349,
+    "bytes": 56344,
+    "crop": {
+      "left": 15,
+      "top": 0,
+      "width": 1744,
+      "height": 802
+    },
+    "scale": 0.4358
+  },
+  "mouse": {
+    "file": "assets/mouse.webp",
+    "width": 180,
+    "height": 185,
+    "bytes": 8770,
+    "crop": {
+      "left": 350,
+      "top": 100,
+      "width": 837,
+      "height": 861
+    },
+    "scale": 0.2151
+  },
+  "corkboard": {
+    "file": "assets/corkboard.webp",
+    "width": 1200,
+    "height": 732,
+    "bytes": 258500,
+    "crop": {
+      "left": 47,
+      "top": 64,
+      "width": 1443,
+      "height": 880
+    },
+    "scale": 0.8316
+  },
+  "notebook": {
+    "file": "assets/notebook.webp",
+    "width": 820,
+    "height": 442,
+    "bytes": 65774,
+    "crop": {
+      "left": 80,
+      "top": 71,
+      "width": 1527,
+      "height": 823
+    },
+    "scale": 0.537
+  },
+  "manual": {
+    "file": "assets/manual.webp",
+    "width": 330,
+    "height": 230,
+    "bytes": 27102,
+    "crop": {
+      "left": 159,
+      "top": 90,
+      "width": 1265,
+      "height": 880
+    },
+    "scale": 0.2609
+  },
+  "coffee-mug": {
+    "file": "assets/coffee-mug.webp",
+    "width": 260,
+    "height": 242,
+    "bytes": 21914,
+    "crop": {
+      "left": 188,
+      "top": 155,
+      "width": 992,
+      "height": 922
+    },
+    "scale": 0.2621
+  },
+  "desk-lamp": {
+    "file": "assets/desk-lamp.webp",
+    "width": 480,
+    "height": 461,
+    "bytes": 38726,
+    "crop": {
+      "left": 28,
+      "top": 12,
+      "width": 1227,
+      "height": 1178
+    },
+    "scale": 0.3912
+  },
+  "stress-ball": {
+    "file": "assets/stress-ball.webp",
+    "width": 180,
+    "height": 175,
+    "bytes": 10394,
+    "crop": {
+      "left": 362,
+      "top": 117,
+      "width": 804,
+      "height": 780
+    },
+    "scale": 0.2239
+  },
+  "rubik-cube": {
+    "file": "assets/rubik-cube.webp",
+    "width": 200,
+    "height": 204,
+    "bytes": 16118,
+    "crop": {
+      "left": 133,
+      "top": 122,
+      "width": 1025,
+      "height": 1045
+    },
+    "scale": 0.1951
+  },
+  "ticket-paper": {
+    "file": "assets/ticket-paper.webp",
+    "width": 360,
+    "height": 198,
+    "bytes": 15188,
+    "crop": {
+      "left": 128,
+      "top": 156,
+      "width": 1281,
+      "height": 706
+    },
+    "scale": 0.281
+  },
+  "memo-paper": {
+    "file": "assets/memo-paper.webp",
+    "width": 300,
+    "height": 341,
+    "bytes": 22640,
+    "crop": {
+      "left": 281,
+      "top": 29,
+      "width": 902,
+      "height": 1025
+    },
+    "scale": 0.3326
+  },
+  "sticky-note": {
+    "file": "assets/sticky-note.webp",
+    "width": 260,
+    "height": 232,
+    "bytes": 8566,
+    "crop": {
+      "left": 163,
+      "top": 173,
+      "width": 996,
+      "height": 888
+    },
+    "scale": 0.261
+  },
+  "pushpin": {
+    "file": "assets/pushpin.webp",
+    "width": 64,
+    "height": 107,
+    "bytes": 2892,
+    "crop": {
+      "left": 446,
+      "top": 264,
+      "width": 406,
+      "height": 681
+    },
+    "scale": 0.1576
+  },
+  "hand-mouse": {
+    "file": "assets/hand-mouse.webp",
+    "width": 560,
+    "height": 435,
+    "bytes": 45522,
+    "crop": {
+      "left": 248,
+      "top": 27,
+      "width": 1271,
+      "height": 988
+    },
+    "scale": 0.4406
+  },
+  "hand-phone": {
+    "file": "assets/hand-phone.webp",
+    "width": 520,
+    "height": 806,
+    "bytes": 70124,
+    "crop": {
+      "left": 0,
+      "top": 59,
+      "width": 953,
+      "height": 1477
+    },
+    "scale": 0.5456
+  },
+  "hand-coffee": {
+    "file": "assets/hand-coffee.webp",
+    "width": 560,
+    "height": 478,
+    "bytes": 51526,
+    "crop": {
+      "left": 149,
+      "top": 207,
+      "width": 1163,
+      "height": 992
+    },
+    "scale": 0.4815
+  },
+  "cat-easter-egg": {
+    "file": "assets/cat-easter-egg.webp",
+    "width": 760,
+    "height": 523,
+    "bytes": 93952,
+    "crop": {
+      "left": 51,
+      "top": 20,
+      "width": 1430,
+      "height": 985
+    },
+    "scale": 0.5315
+  },
+  "snack": {
+    "file": "assets/snack.webp",
+    "width": 330,
+    "height": 206,
+    "bytes": 27366,
+    "crop": {
+      "left": 108,
+      "top": 102,
+      "width": 1320,
+      "height": 822
+    },
+    "scale": 0.25
+  },
+  "plant": {
+    "file": "assets/plant.webp",
+    "width": 420,
+    "height": 381,
+    "bytes": 65488,
+    "crop": {
+      "left": 81,
+      "top": 80,
+      "width": 1172,
+      "height": 1064
+    },
+    "scale": 0.3584
+  },
+  "pen-holder": {
+    "file": "assets/pen-holder.webp",
+    "width": 200,
+    "height": 321,
+    "bytes": 32588,
+    "crop": {
+      "left": 348,
+      "top": 86,
+      "width": 666,
+      "height": 1068
+    },
+    "scale": 0.3003
+  }
+}

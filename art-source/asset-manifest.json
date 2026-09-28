@@ -1,0 +1,665 @@
+{
+  "version": "1.0",
+  "scene": {
+    "width": 1672,
+    "height": 941,
+    "fit": "contain",
+    "positionsAre": "proposed top-left PNG canvas positions; not calibrated against game repository"
+  },
+  "assets": [
+    {
+      "id": "background",
+      "label": "Habitación y mesa",
+      "file": "assets/background.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1912743,
+      "sha256": "aaefa82f03ba156c7ee911237292630dc110c57918ffaf3711b0e6f855ef40de",
+      "hasAlpha": false,
+      "alphaRange": null,
+      "visibleBoundsAlpha32": [
+        0,
+        0,
+        1672,
+        941
+      ],
+      "position": null,
+      "isStatic": true
+    },
+    {
+      "id": "monitor",
+      "label": "Monitor",
+      "file": "assets/monitor.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1712001,
+      "sha256": "5fb79ee27079ebbfc58406afc5153717eede79efed3ea1b2bcaf3f236c782198",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        184,
+        71,
+        1375,
+        977
+      ],
+      "position": [
+        780,
+        230,
+        820,
+        30
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "telephone-base",
+      "label": "Base del teléfono",
+      "file": "assets/telephone-base.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2073863,
+      "sha256": "44e36cb2b81711b2a0ed70f3724de2a46070313b38d460f1f29b3f6c3beeb36b",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        100,
+        55,
+        1491,
+        1003
+      ],
+      "position": [
+        65,
+        535,
+        370,
+        40
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "telephone-handset",
+      "label": "Auricular",
+      "file": "assets/telephone-handset.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1525228,
+      "sha256": "b5cdf85036161e9d09f8c2be5ef4fa9ecd8f44ad8be9548821073123cc0c59fd",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        106,
+        63,
+        955,
+        1503
+      ],
+      "position": [
+        87,
+        540,
+        144,
+        41
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "keyboard",
+      "label": "Teclado",
+      "file": "assets/keyboard.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 1678053,
+      "sha256": "a41fe9c06c2a630c7bc1ac0f97efe89e7b537012425b82b63dd715b70daa4c6a",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        21,
+        0,
+        1754,
+        798
+      ],
+      "position": [
+        966,
+        701,
+        447,
+        40
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "mouse",
+      "label": "Mouse",
+      "file": "assets/mouse.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1465435,
+      "sha256": "8023d9e37e28bf1dd3a2a5056bf6b3cd18802f4c6f6ee339131f2cfd85c2544c",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        355,
+        104,
+        1183,
+        956
+      ],
+      "position": [
+        1449,
+        772,
+        145,
+        45
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "corkboard",
+      "label": "Pizarra vacía",
+      "file": "assets/corkboard.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2829462,
+      "sha256": "95974b9f5a648a9cc1323f7f7f5f9883d8ee464373184dfa22c12a8b4f064603",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        53,
+        70,
+        1486,
+        939
+      ],
+      "position": [
+        95,
+        32,
+        625,
+        10
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "notebook",
+      "label": "Cuaderno abierto",
+      "file": "assets/notebook.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1577764,
+      "sha256": "1eeb0dbceecbf1e1abc7e1b913f7988437c88baa53ad752c851deff55d1289a8",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        84,
+        75,
+        1601,
+        889
+      ],
+      "position": [
+        368,
+        706,
+        425,
+        50
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "manual",
+      "label": "Manual cerrado",
+      "file": "assets/manual.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2187011,
+      "sha256": "e9448efe3c80eec4ac4f1a9e6ba26b10b8ccfacef749eddc26d0d9b2b116825a",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        163,
+        94,
+        1420,
+        965
+      ],
+      "position": [
+        803,
+        798,
+        163,
+        45
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "coffee-mug",
+      "label": "Taza de café",
+      "file": "assets/coffee-mug.png",
+      "width": 1312,
+      "height": 1199,
+      "bytes": 1048694,
+      "sha256": "4b2d4f1935d5c3fc6d6cbea6db1ae0f4b85652de627f2fb036ca3b04d6d8d096",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        193,
+        159,
+        1176,
+        1072
+      ],
+      "position": [
+        420,
+        550,
+        145,
+        40
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "desk-lamp",
+      "label": "Lámpara",
+      "file": "assets/desk-lamp.png",
+      "width": 1301,
+      "height": 1209,
+      "bytes": 827894,
+      "sha256": "7db6de5839a33e938fad1d29f4c3711d1ceb1ceaaada733645d8c976550b9e1c",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        32,
+        17,
+        1249,
+        1186
+      ],
+      "position": [
+        0,
+        350,
+        230,
+        20
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "stress-ball",
+      "label": "Pelota antiestrés",
+      "file": "assets/stress-ball.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1441782,
+      "sha256": "2145c7e5c56f52eb82405c70a6a1457210ba54ec7d47a51ee877b39f03b0a356",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        366,
+        121,
+        1162,
+        892
+      ],
+      "position": [
+        683,
+        631,
+        85,
+        40
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "rubik-cube",
+      "label": "Cubo 3×3",
+      "file": "assets/rubik-cube.png",
+      "width": 1303,
+      "height": 1207,
+      "bytes": 1257895,
+      "sha256": "94664f148346facfa36e5730baff21eae446dfe38fc40b8dc0b17f94d45d5fbe",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        138,
+        126,
+        1153,
+        1162
+      ],
+      "position": [
+        585,
+        601,
+        96,
+        40
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "ticket-paper",
+      "label": "Ticket en blanco",
+      "file": "assets/ticket-paper.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1982178,
+      "sha256": "7fa3b0867c803f5950b6da122878471e1dad72e68d463817f84c7951fcda4a81",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        133,
+        160,
+        1404,
+        856
+      ],
+      "position": [
+        101,
+        801,
+        182,
+        50
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "memo-paper",
+      "label": "Aviso en blanco",
+      "file": "assets/memo-paper.png",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1268191,
+      "sha256": "7805ec7442aafd79733dfc79d27451c5059d3b49a9923a0b0865f0f85bd2bc93",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        286,
+        34,
+        1179,
+        1049
+      ],
+      "position": [
+        229,
+        758,
+        144,
+        45
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "sticky-note",
+      "label": "Nota adhesiva",
+      "file": "assets/sticky-note.png",
+      "width": 1322,
+      "height": 1190,
+      "bytes": 953259,
+      "sha256": "a64d1c6aa006724790ba655b1861a858599bdbb4b6657965f1350783f0afab5c",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        169,
+        177,
+        1153,
+        1057
+      ],
+      "position": null,
+      "isStatic": true
+    },
+    {
+      "id": "pushpin",
+      "label": "Chinche",
+      "file": "assets/pushpin.png",
+      "width": 1299,
+      "height": 1211,
+      "bytes": 258462,
+      "sha256": "5a271f45f11d2e48abe051af0fc7b47c0a862ee7c08fc83392ffe480155ea274",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        450,
+        270,
+        848,
+        940
+      ],
+      "position": null,
+      "isStatic": true
+    },
+    {
+      "id": "hand-mouse",
+      "label": "Mano con mouse",
+      "file": "assets/hand-mouse.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1882052,
+      "sha256": "cad1b3d4adca5096b84cacc25a095ad812147ced637627742ef5d9aa8e1bf1c2",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        253,
+        32,
+        1513,
+        1011
+      ],
+      "position": null,
+      "isStatic": true
+    },
+    {
+      "id": "hand-phone",
+      "label": "Mano con auricular",
+      "file": "assets/hand-phone.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1738882,
+      "sha256": "20770b7c046465ea6c4afaef5e3667d9d52f673041e3e6a871012586ea0e54ca",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        0,
+        63,
+        948,
+        1536
+      ],
+      "position": null,
+      "isStatic": true
+    },
+    {
+      "id": "hand-coffee",
+      "label": "Mano con taza",
+      "file": "assets/hand-coffee.png",
+      "width": 1312,
+      "height": 1199,
+      "bytes": 1103739,
+      "sha256": "a669a6683dfc0fe2c5c0ab061080da51f48f0b5ecac09c15a3c3e2c35f31e50f",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        153,
+        211,
+        1312,
+        1199
+      ],
+      "position": null,
+      "isStatic": true
+    },
+    {
+      "id": "cat-easter-egg",
+      "label": "Gatito dormido",
+      "file": "assets/cat-easter-egg.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1962218,
+      "sha256": "15921e1476ca1419418425eeb1b98530526ae387efc178dd5c8eb5ef4f043e5c",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        56,
+        24,
+        1476,
+        1000
+      ],
+      "position": null,
+      "isStatic": true
+    },
+    {
+      "id": "snack",
+      "label": "Comida",
+      "file": "assets/snack.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1879927,
+      "sha256": "9605e58c362be80cd143ba0e0183ee623fde16d92de8eaf7ef4fdd495179edf8",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "visibleBoundsAlpha32": [
+        112,
+        106,
+        1424,
+        919
+      ],
+      "position": [
+        32,
+        725,
+        180,
+        43
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "plant",
+      "label": "Planta",
+      "file": "assets/plant.png",
+      "width": 1327,
+      "height": 1185,
+      "bytes": 1392747,
+      "sha256": "0b0ca71be27380cd4988d8c28cb077c2eedcd8cac6fe395dc2915073f54a2f8e",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        85,
+        84,
+        1249,
+        1140
+      ],
+      "position": [
+        1480,
+        405,
+        190,
+        20
+      ],
+      "isStatic": true
+    },
+    {
+      "id": "pen-holder",
+      "label": "Portalápices",
+      "file": "assets/pen-holder.png",
+      "width": 1312,
+      "height": 1199,
+      "bytes": 1120776,
+      "sha256": "9a6675801b52896035b475c9996ff86e0dfe7ca923d8fa2cffc355826b8b4737",
+      "hasAlpha": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBoundsAlpha32": [
+        352,
+        90,
+        1010,
+        1150
+      ],
+      "position": [
+        694,
+        514,
+        91,
+        25
+      ],
+      "isStatic": true
+    }
+  ],
+  "overlays": {
+    "monitorScreen": {
+      "asset": "monitor",
+      "rectNormalized": [
+        0.201,
+        0.156,
+        0.611,
+        0.514
+      ],
+      "status": "visual estimate; calibrate in browser"
+    },
+    "boardInterior": {
+      "asset": "corkboard",
+      "rectNormalized": [
+        0.075,
+        0.13,
+        0.85,
+        0.72
+      ],
+      "status": "visual estimate"
+    },
+    "notePin": {
+      "asset": "sticky-note",
+      "pointNormalized": [
+        0.5,
+        0.2
+      ],
+      "status": "proposed overlay anchor, not an existing painted pin"
+    }
+  },
+  "exclusionGroups": [
+    [
+      "mouse",
+      "hand-mouse"
+    ],
+    [
+      "telephone-handset",
+      "hand-phone"
+    ],
+    [
+      "coffee-mug",
+      "hand-coffee"
+    ]
+  ]
+}

@@ -1,0 +1,8 @@
+dist
+node_modules
+art-source
+public
+package-lock.json
+docs/PROMPT-MAESTRO-TURNO-DE-GUARDIA.md
+test-results
+playwright-report
