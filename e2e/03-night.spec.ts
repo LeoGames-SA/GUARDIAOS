@@ -214,11 +214,9 @@ test('Elena vuelve a llamar: tranquilizar una vez, citar evidencia real y plazo 
   // No se ofrece «ya está resuelto» ni «causa probable» sin respaldo en la pizarra.
   await expect(call.getByRole('button', { name: /causa probable/ })).toHaveCount(0);
   await call.getByRole('button', { name: 'Cortar', exact: true }).click();
-  await page.getByRole('button', { name: 'Pausa', exact: true }).click();
   for (let i = 0; i < 3; i++) {
+    await page.getByRole('button', { name: 'Pausa', exact: true }).click();
     await page.locator('.pauses li', { hasText: 'Comer algo' }).getByRole('button').click();
-    await page.getByRole('button', { name: 'Otra pausa' }).click();
   }
-  await closePanel(page);
   await expect(page.locator('.case-chip', { hasText: '001' })).toContainText('plazo vencido');
 });

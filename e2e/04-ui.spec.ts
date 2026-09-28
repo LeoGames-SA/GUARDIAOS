@@ -66,11 +66,11 @@ test('pizarra con teclado; hilos alineados tras redimensionar y con zoom 125 %',
   await expect(page.locator('.note.on')).toHaveCount(2);
   await expect(page.locator('.thread')).toHaveCount(2);
   await expect(page.locator('.rel-supports')).toHaveCount(2);
-  expect(await threadMisalignment(page)).toBeLessThan(3);
+  await expect.poll(() => threadMisalignment(page)).toBeLessThan(3);
 
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.waitForTimeout(150);
-  expect(await threadMisalignment(page)).toBeLessThan(3);
+  await expect.poll(() => threadMisalignment(page)).toBeLessThan(3);
 
   // Quitar una conexión.
   await page.getByRole('button', { name: /Dijo la persona: Elena recuerda/ }).press('Enter');
@@ -93,7 +93,7 @@ test('pizarra con teclado; hilos alineados tras redimensionar y con zoom 125 %',
   // Durante la llamada, la pizarra también se abre desde la tarjeta de conversación.
   await zoomed.locator('aside.call').getByRole('button', { name: 'Pizarra', exact: true }).click();
   await expect(zoomed.locator('.thread')).toHaveCount(1);
-  expect(await threadMisalignment(zoomed)).toBeLessThan(3);
+  await expect.poll(() => threadMisalignment(zoomed)).toBeLessThan(3);
   await ctx.close();
   expect(errors).toEqual([]); // incluye recursos que no cargan (p. ej. el corcho)
 });
@@ -152,19 +152,40 @@ test('pausas, pelota, cubo y gato: costos visibles y efectos acotados', async ({
   await page.getByRole('button', { name: /Teléfono: está sonando/ }).click();
   await page.locator('aside.call').getByRole('button', { name: 'Cortar', exact: true }).click();
 
-  // Café desde la taza: 5 min y novedades del turno.
-  await page.getByRole('button', { name: 'Taza: pausa para café' }).click();
-  await page.locator('.pauses li.preset').getByRole('button', { name: /Tomar/ }).click();
-  await expect(page.locator('.pause-result')).toContainText('23:00 → 23:05');
-  await page.getByRole('button', { name: 'Volver al puesto' }).click();
-  await expect(page.locator('.pose')).toBeVisible(); // mano con taza, sin la taza suelta
-  await expect(page.getByRole('button', { name: 'Taza: pausa para café' })).toBeHidden();
+  // Café desde la taza: la mano la levanta (sin taza suelta), se aplica una sola vez.
+  const mug = page.getByRole('button', { name: 'Taza: tomar café · 5 min' });
+  await mug.dblclick();
+  await expect(page.locator('.pose.sip')).toBeVisible();
+  await expect(mug).toBeHidden();
+  await page.getByRole('button', { name: 'Saltar ›' }).click();
+  await expect(page.locator('.pose')).toHaveCount(0);
+  const card = page.getByRole('region', { name: 'Resumen de la pausa' });
+  await expect(card).toContainText('23:00 → 23:05');
+  await expect(card).toContainText(/Energía \+\d+.*Cafeína \+\d+/);
+  await expect(page.locator('.hud-clock')).toContainText('23:05');
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __tdg: { game: { pauses: unknown[] } } }).__tdg.game.pauses.length,
+    ),
+  ).toBe(1);
+  await card.getByRole('button', { name: 'Cerrar el resumen de la pausa' }).click();
 
-  // Comer: atraviesa la llegada del correo de las 23:20.
-  await page.getByRole('button', { name: 'Pausa', exact: true }).click();
-  await page.locator('.pauses li', { hasText: 'Comer algo' }).getByRole('button').click();
-  await expect(page.locator('.pause-result')).toContainText('Llegó el expediente 002');
-  await page.getByRole('button', { name: 'Volver al puesto' }).click();
+  // Sándwich: muestra la duración y lo que va a pasar antes de comer; atraviesa las 23:20.
+  await page.getByRole('button', { name: 'Sándwich: comer algo · 20 min' }).click();
+  const ask = page.getByRole('dialog', { name: 'Comer el sándwich' });
+  await expect(ask).toContainText('23:05 → 23:25');
+  await expect(ask).toContainText('23:20');
+  await ask.getByRole('button', { name: /Comer · 20 min/ }).click();
+  await expect(card).toContainText('Llegó el expediente 002');
+  await expect(page.locator('.obj.bitten-1')).toBeVisible();
+  await card.getByRole('button', { name: 'Abrir el correo' }).click();
+  await expect(win(page, 'Correo')).toBeVisible();
+  await closePanel(page);
+  await page.getByRole('button', { name: /Avisos del turno/ }).click();
+  await expect(page.getByRole('region', { name: 'Avisos del turno' })).toContainText(
+    'Llegó el expediente 002',
+  );
+  await page.getByRole('button', { name: /Avisos del turno/ }).click();
 
   // Pelota: requiere apretar; segunda vez seguida rinde menos.
   await page.getByRole('button', { name: 'Pelota antiestrés' }).click();

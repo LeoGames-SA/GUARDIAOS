@@ -3235,3 +3235,222 @@ details > summary {
     order: 9;
   }
 }
+
+/* ------------------------------------------------------------ Café, comida y avisos */
+/* Levantar la taza, acercarla y devolverla. Sólo visual: el motor ya aplicó la pausa. */
+.pose.sip {
+  transform-origin: 50% 100%;
+  animation: sip 2.1s ease-in-out both;
+}
+@keyframes sip {
+  0% {
+    opacity: 0;
+    transform: translate(12%, 34%) scale(0.72) rotate(4deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0);
+  }
+  42%,
+  64% {
+    transform: translate(-6%, -38%) scale(1.32) rotate(-12deg);
+  }
+  84% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(12%, 34%) scale(0.72) rotate(4deg);
+  }
+}
+:root[data-motion='reduced'] .pose.sip {
+  animation: none;
+}
+.sip-skip {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 300;
+}
+
+/* Mordiscos en el sándwich: máscara sobre el dibujo, sin deformarlo. */
+.obj.bitten-1 img,
+.obj.bitten-2 img {
+  --b1: radial-gradient(ellipse 8.5% 13.6% at 42% 0%, transparent 96%, #000 100%);
+  --b2: radial-gradient(ellipse 6.5% 10.4% at 50.5% 3%, transparent 96%, #000 100%);
+  --b3: radial-gradient(ellipse 5.5% 8.8% at 34.5% 5%, transparent 96%, #000 100%);
+  mask-image: var(--b1), var(--b2), var(--b3);
+  mask-composite: intersect;
+}
+.obj.bitten-2 img {
+  --b4: radial-gradient(ellipse 8% 12.8% at 19.5% 34%, transparent 96%, #000 100%);
+  --b5: radial-gradient(ellipse 6% 9.6% at 26% 30.5%, transparent 96%, #000 100%);
+  mask-image: var(--b1), var(--b2), var(--b3), var(--b4), var(--b5);
+}
+
+.pause-card {
+  position: fixed;
+  right: 12px;
+  top: calc(var(--hud-h) + 10px);
+  z-index: 320;
+  width: min(380px, calc(100vw - 24px));
+  background: #0d2530f5;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--amber);
+  border-radius: 10px;
+  padding: 10px 12px 12px;
+  box-shadow: 0 10px 30px #0008;
+  animation: card-in var(--panel-t) ease-out;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.pause-card header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.pause-card .pc-time {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-left: auto;
+}
+.pc-close {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.pc-close:hover {
+  background: #ffffff1a;
+}
+.pc-text {
+  margin: 6px 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+.pc-warn {
+  margin: 6px 0;
+  font-size: 0.85rem;
+  color: #f3c87a;
+}
+.pc-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+}
+.pc-deltas li {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ffffff14;
+}
+.pc-deltas li.good {
+  color: #9fe0b0;
+}
+.pc-deltas li.bad {
+  color: #f3b38a;
+}
+.pc-news {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  font-size: 0.88rem;
+}
+.pc-news ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: grid;
+  gap: 6px;
+}
+.pc-news li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.snack-prompt .row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.notice-wrap {
+  position: relative;
+}
+.notice-btn {
+  position: relative;
+}
+.notice-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #c8412f;
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 18px;
+  text-align: center;
+  padding: 0 4px;
+}
+.notice-tray {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: min(360px, calc(100vw - 24px));
+  max-height: 50vh;
+  overflow: auto;
+  background: #0d2530f7;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  z-index: 500;
+  box-shadow: 0 10px 30px #0008;
+}
+.notice-tray ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+.notice-tray li.bad {
+  color: #f3b38a;
+}
+.nt-time {
+  font-family: var(--mono);
+  opacity: 0.7;
+  margin-right: 4px;
+}
+@media (max-width: 760px) {
+  .pause-card header {
+    flex-wrap: wrap;
+  }
+  .pause-card .pc-close {
+    margin-left: auto;
+  }
+  .pause-card .pc-time {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}

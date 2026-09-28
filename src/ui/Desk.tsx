@@ -10,6 +10,8 @@ import { CallPanel, IncomingCall, markCallStart, PhonePanel } from './panels/Cal
 import { BoardPanel } from './panels/BoardPanel';
 import { NotebookPanel, ManualPanel } from './panels/NotebookPanel';
 import { PausePanel } from './panels/PausePanel';
+import { PauseCard, pauseResult, SnackPrompt, type PauseNews, type PauseResult } from './panels/PauseCard';
+import { wm } from './os/windows';
 import { NicoPanel } from './panels/NicoPanel';
 import { CubePanel } from './panels/CubePanel';
 import { BallPanel } from './panels/BallPanel';
@@ -107,6 +109,13 @@ export function Desk() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [live, setLive] = useState('');
   const [pose, setPose] = useState<'coffee' | null>(null);
+  const sipping = useRef(false);
+  const pendingCard = useRef<PauseResult | null>(null);
+  const [pauseCard, setPauseCard] = useState<PauseResult | null>(null);
+  const [snackAsk, setSnackAsk] = useState(false);
+  const [notices, setNotices] = useState<(Toast & { at: number })[]>([]);
+  const [noticesOpen, setNoticesOpen] = useState(false);
+  const [seenNotice, setSeenNotice] = useState(0);
   const opener = useRef<HTMLElement | null>(null);
   const toastId = useRef(0);
 
@@ -135,10 +144,12 @@ export function Desk() {
           else if (e.type === 'arrival' || e.type === 'note') sound.play('notify');
           else if (e.type === 'blocked') sound.play('error');
           else if (e.type === 'closed') sound.play('confirm');
-          else if (e.type === 'pause' && e.kind === 'coffee') setPose('coffee');
         }
         if (!fresh.length) return;
         setLive(fresh.map((t) => t.text).join(' '));
+        setNotices((prev) => [...fresh.map((t) => ({ ...t, at: g.minute })), ...prev].slice(0, 20));
+        // Lo que pasó durante una pausa se muestra en su resumen, no en avisos sueltos.
+        if (events.some((e) => e.type === 'pause')) return;
         // Avisos iguales se agrupan en uno con contador, en vez de apilarse.
         setToasts((prev) => {
           const next = [...prev];
@@ -160,11 +171,50 @@ export function Desk() {
     [store],
   );
 
+  // Café: el motor aplica la pausa una sola vez al hacer clic; la animación es sólo visual,
+  // se puede saltar y al terminar muestra el resumen compacto.
+  const endSip = useCallback(() => {
+    setPose(null);
+    sipping.current = false;
+    if (pendingCard.current) setPauseCard(pendingCard.current);
+    pendingCard.current = null;
+  }, []);
   useEffect(() => {
     if (!pose) return;
-    const t = setTimeout(() => setPose(null), 1600);
-    return () => clearTimeout(t);
-  }, [pose]);
+    const reduced = document.documentElement.dataset.motion === 'reduced';
+    const t = setTimeout(endSip, reduced ? 700 : 2100);
+    const onKey = (e: KeyboardEvent) => {
+      if (['Escape', 'Enter', ' '].includes(e.key)) {
+        e.preventDefault();
+        endSip();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [pose, endSip]);
+
+  const takePause = useCallback(
+    (kind: PauseKind) => {
+      const g = store.game;
+      if (!g || sipping.current) return;
+      const before = { minute: g.minute, needs: { ...g.needs } };
+      const events = store.dispatch({ type: 'pause', kind });
+      const after = store.game;
+      if (!after || events.some((e) => e.type === 'blocked')) return;
+      const res = pauseResult(++toastId.current, kind, before, after, events);
+      setPauseCard(null);
+      if (kind === 'coffee') {
+        sipping.current = true;
+        pendingCard.current = res;
+        setPose('coffee');
+      } else setPauseCard(res);
+    },
+    [store],
+  );
+  const closeCard = useCallback(() => setPauseCard(null), []);
 
   const answer = useCallback(() => {
     sound.play('click');
@@ -195,9 +245,12 @@ export function Desk() {
         case 'manual':
           return open({ kind: 'manual' }, el);
         case 'mug':
-          return open({ kind: 'pause', preset: 'coffee' }, el);
+          sound.play('click');
+          return takePause('coffee');
         case 'snack':
-          return open({ kind: 'pause', preset: 'eat' }, el);
+          sound.play('click');
+          setPauseCard(null);
+          return setSnackAsk(true);
         case 'cube':
           return open({ kind: 'cube' }, el);
         case 'ball':
@@ -210,7 +263,7 @@ export function Desk() {
           return;
       }
     },
-    [open, store, answer],
+    [open, store, answer, takePause],
   );
 
   // Escape cierra el panel abierto (los diálogos internos lo detienen antes).
@@ -225,7 +278,15 @@ export function Desk() {
     return () => window.removeEventListener('keydown', onKey);
   }, [panel, close]);
 
+  const onPauseAction = (a: NonNullable<PauseNews['action']>, el: HTMLElement) => {
+    setPauseCard(null);
+    if (a === 'answer') return answer();
+    if (store.game) wm.open(store.game.mode, a === 'mail' ? 'mail' : 'tickets');
+    open({ kind: 'os' }, el);
+  };
+
   if (!game) return null;
+  const unseen = notices.filter((t) => t.id > seenNotice).length;
   const practice = game.mode === 'practice';
   const dual = app.profile.secondMonitor && !practice;
   const n = mood(game.needs);
@@ -243,6 +304,7 @@ export function Desk() {
             game={game}
             dual={dual}
             pose={pose}
+            poseClass={pose ? 'sip' : undefined}
             onOpen={onScene}
             highlight={highlight}
             inert={Boolean(panel)}
@@ -330,6 +392,36 @@ export function Desk() {
             >
               Pausa
             </button>
+            <div className="notice-wrap">
+              <button
+                type="button"
+                className="btn btn-sm notice-btn"
+                aria-expanded={noticesOpen}
+                aria-label={`Avisos del turno${unseen ? ` (${unseen} sin ver)` : ''}`}
+                onClick={() => {
+                  setNoticesOpen((o) => !o);
+                  setSeenNotice(notices[0]?.id ?? 0);
+                }}
+              >
+                <span aria-hidden="true">🔔</span>
+                {unseen > 0 && <span className="notice-count">{unseen}</span>}
+              </button>
+              {noticesOpen && (
+                <div className="notice-tray" role="region" aria-label="Avisos del turno">
+                  {notices.length === 0 ? (
+                    <p className="muted small">Todavía no hubo avisos.</p>
+                  ) : (
+                    <ul>
+                      {notices.map((t) => (
+                        <li key={t.id} className={t.tone}>
+                          <span className="nt-time">{clock(t.at)}</span> {t.text}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           </>
         )}
         {practice && (
@@ -370,7 +462,17 @@ export function Desk() {
           {panel.kind === 'board' && <BoardPanel game={game} onClose={close} />}
           {panel.kind === 'notebook' && <NotebookPanel game={game} onClose={close} />}
           {panel.kind === 'manual' && <ManualPanel onClose={close} />}
-          {panel.kind === 'pause' && <PausePanel game={game} preset={panel.preset} onClose={close} />}
+          {panel.kind === 'pause' && (
+            <PausePanel
+              game={game}
+              preset={panel.preset}
+              onClose={close}
+              onTake={(k) => {
+                close();
+                takePause(k);
+              }}
+            />
+          )}
           {panel.kind === 'nico' && (
             <NicoPanel game={game} onClose={close} onPause={() => setPanel({ kind: 'pause' })} />
           )}
@@ -428,6 +530,26 @@ export function Desk() {
         })}
       </nav>
 
+      {pose && (
+        <button type="button" className="btn btn-sm sip-skip" onClick={endSip}>
+          Saltar ›
+        </button>
+      )}
+      {snackAsk && (
+        <SnackPrompt
+          game={game}
+          nextAt={next?.at ?? null}
+          onClose={() => setSnackAsk(false)}
+          onEat={() => {
+            setSnackAsk(false);
+            takePause('eat');
+          }}
+        />
+      )}
+      {pauseCard && !snackAsk && (
+        <PauseCard result={pauseCard} game={game} onClose={closeCard} onAction={onPauseAction} />
+      )}
+
       <div className="sr-only" role="status" aria-live="polite">
         {live}
       </div>
@@ -453,7 +575,7 @@ const MOBILE_ITEMS: { target: SceneTarget | 'pauses'; label: string; art?: ArtId
     { target: 'ticket', label: 'Ticket', art: 'ticket-paper' },
     { target: 'memo', label: 'Avisos', art: 'memo-paper' },
     { target: 'mug', label: 'Café', art: 'coffee-mug', campaignOnly: true },
-    { target: 'snack', label: 'Comer', art: 'snack', campaignOnly: true },
+    { target: 'snack', label: 'Sándwich', art: 'snack', campaignOnly: true },
     { target: 'cube', label: 'Cubo', art: 'rubik-cube' },
     { target: 'ball', label: 'Pelota', art: 'stress-ball' },
     { target: 'manual', label: 'Manual', art: 'manual' },

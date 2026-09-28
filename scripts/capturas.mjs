@@ -111,16 +111,32 @@ for (const size of SIZES) {
     await start(p);
     await openApp(p, m, 'Navegador');
   });
-  await shoot(size, 'cafe', async (p) => {
+  await shoot(size, 'cafe', async (p, m) => {
     await start(p);
     await p.evaluate(() => {
       window.__tdg.dispatch({ type: 'answerCall' });
       window.__tdg.dispatch({ type: 'hangUp' });
     });
-    await p.getByRole('button', { name: /Taza/ }).first().click();
-    await p.waitForTimeout(300);
-    const take = p.locator('.pauses li.preset').getByRole('button', { name: /Tomar/ });
-    if (await take.isVisible().catch(() => false)) await take.click();
+    await tap(p, m, /Taza/, 'Café');
+    await p.waitForTimeout(700); // a mitad del sorbo
+  });
+  await shoot(size, 'cafe-resumen', async (p, m) => {
+    await start(p);
+    await p.evaluate(() => {
+      window.__tdg.dispatch({ type: 'answerCall' });
+      window.__tdg.dispatch({ type: 'hangUp' });
+    });
+    await tap(p, m, /Taza/, 'Café');
+    await p.getByRole('button', { name: 'Saltar ›' }).click();
+  });
+  await shoot(size, 'comida', async (p, m) => {
+    await start(p);
+    await p.evaluate(() => {
+      window.__tdg.dispatch({ type: 'answerCall' });
+      window.__tdg.dispatch({ type: 'hangUp' });
+    });
+    await tap(p, m, /Sándwich/, 'Sándwich');
+    await p.getByRole('button', { name: /Comer · 20 min/ }).click();
   });
   await shoot(size, 'informe', async (p) => {
     await start(p, 1);

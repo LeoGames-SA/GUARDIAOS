@@ -231,6 +231,8 @@ export const Scene = memo(function Scene({
   const focus = game?.focusId ? game.cases[game.focusId] : null;
   // En espera, el auricular vuelve a la base: no hay mano con teléfono.
   const activePose = inCall && !onHold ? 'phone' : pose;
+  // Cada vez que Nico come, el sándwich queda con un mordisco más (máscara, sin deformar el dibujo).
+  const bites = (game?.pauses ?? []).filter((p) => p.kind === 'eat').length;
   const hidden = new Set<SlotId>([...(activePose ? [POSES[activePose].hides] : []), ...(holding ?? [])]);
   const s = (id: SlotId) => L[id]!;
   const screenRect = (slot: Placement) => {
@@ -345,7 +347,7 @@ export const Scene = memo(function Scene({
 
       <Obj
         slot={s('mug')}
-        label="Taza: pausa para café"
+        label="Taza: tomar café · 5 min"
         target="mug"
         onOpen={onOpen}
         hidden={hidden.has('mug')}
@@ -360,7 +362,14 @@ export const Scene = memo(function Scene({
       </Obj>
       <Obj slot={s('cube')} label="Cubo 3×3" target="cube" onOpen={onOpen} inert={inert} />
       <Obj slot={s('ball')} label="Pelota antiestrés" target="ball" onOpen={onOpen} inert={inert} />
-      <Obj slot={s('snack')} label="Comida: pausa para comer" target="snack" onOpen={onOpen} inert={inert} />
+      <Obj
+        slot={s('snack')}
+        label="Sándwich: comer algo · 20 min"
+        target="snack"
+        onOpen={onOpen}
+        inert={inert}
+        className={bites ? `bitten-${Math.min(bites, 2)}` : ''}
+      />
       <Obj
         slot={s('notebook')}
         label="Cuaderno del técnico"
