@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_MOVES, applyMove, FACES, inverse, isSolved, isValidCube, scramble, SOLVED } from '../src/engine/cube';
+import {
+  ALL_MOVES,
+  applyMove,
+  FACES,
+  inverse,
+  isSolved,
+  isValidCube,
+  scramble,
+  SOLVED,
+} from '../src/engine/cube';
 import { mulberry32 } from '../src/engine/rng';
 
 describe('cubo 3×3', () => {
@@ -42,7 +51,7 @@ describe('cubo 3×3', () => {
     expect(s).toBe(SOLVED);
   });
 
-  it('R U R\' U\' repetido seis veces vuelve al estado inicial', () => {
+  it("R U R' U' repetido seis veces vuelve al estado inicial", () => {
     let s = SOLVED;
     for (let i = 0; i < 6; i++) for (const m of ['R', 'U', "R'", "U'"] as const) s = applyMove(s, m);
     expect(s).toBe(SOLVED);

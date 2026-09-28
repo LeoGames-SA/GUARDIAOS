@@ -20,7 +20,11 @@ const FRAME: Record<Face, { n: V; right: V; down: V }> = {
 
 const add = (a: V, b: V, k = 1): V => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 const dot = (a: V, b: V) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const cross = (a: V, b: V): V => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const cross = (a: V, b: V): V => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
 const key = (p: V, n: V) => `${p.join(',')}|${n.join(',')}`;
 
 const stickers: { p: V; n: V }[] = [];

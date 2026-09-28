@@ -63,7 +63,10 @@ describe('expediente 001: variantes deterministas', () => {
 
   it('job: cancelar el trabajo 412 corrige; revertir el controlador es una consecuencia', () => {
     let s = answered(QA_SEEDS.job);
-    s = run(s, p1('t-queue'), p1('i-cancel-job'), p1('i-notify-resend'), p1('v-retry'), { type: 'close', caseId: 'c001' }).state;
+    s = run(s, p1('t-queue'), p1('i-cancel-job'), p1('i-notify-resend'), p1('v-retry'), {
+      type: 'close',
+      caseId: 'c001',
+    }).state;
     expect(s.cases.c001!.outcome).toBe('verified');
     const report = caseReport(CONTENT, s, 'c001')!;
     expect(report.checklist).toEqual([{ text: expect.any(String), done: true }]);
@@ -87,7 +90,13 @@ describe('expediente 001: variantes deterministas', () => {
     let s = answered(QA_SEEDS.dns);
     s = run(s, p1('i-fix-dns')).state;
     const t0 = s.minute;
-    s = run(s, { type: 'hangUp' }, { type: 'pause', kind: 'eat' }, { type: 'pause', kind: 'eat' }, { type: 'pause', kind: 'eat' }).state;
+    s = run(
+      s,
+      { type: 'hangUp' },
+      { type: 'pause', kind: 'eat' },
+      { type: 'pause', kind: 'eat' },
+      { type: 'pause', kind: 'eat' },
+    ).state;
     expect(s.minute).toBeGreaterThanOrEqual(t0 + 60);
     expect(s.cases.c001!.world.pcCache).toBe('10.20.0.15');
   });
@@ -147,9 +156,13 @@ describe('reloj compartido y eventos', () => {
     let s = answered(QA_SEEDS.driver);
     s = run(s, { type: 'hangUp' }).state;
     const r = run(s, { type: 'endShift' });
-    const arrivals = r.events.filter((e) => e.type === 'arrival').map((e) => (e as { caseId: string }).caseId);
+    const arrivals = r.events
+      .filter((e) => e.type === 'arrival')
+      .map((e) => (e as { caseId: string }).caseId);
     expect(arrivals).toEqual(['c002', 'c003']);
-    const deadlines = r.events.filter((e) => e.type === 'deadline').map((e) => (e as { caseId: string }).caseId);
+    const deadlines = r.events
+      .filter((e) => e.type === 'deadline')
+      .map((e) => (e as { caseId: string }).caseId);
     expect(deadlines).toEqual(['c001', 'c002', 'c003']);
     expect(r.state.ended).toBe(true);
     expect(r.state.minute).toBe(480);
@@ -190,7 +203,13 @@ describe('reloj compartido y eventos', () => {
 describe('pizarra: separación por expediente y respaldo', () => {
   it('no se puede conectar una nota de otro expediente', () => {
     let s = answered(QA_SEEDS.driver);
-    s = run(s, p1('t-service'), { type: 'hangUp' }, { type: 'pause', kind: 'eat' }, { type: 'take', caseId: 'c002' }).state;
+    s = run(
+      s,
+      p1('t-service'),
+      { type: 'hangUp' },
+      { type: 'pause', kind: 'eat' },
+      { type: 'take', caseId: 'c002' },
+    ).state;
     const note001 = s.cases.c001!.notes[0]!;
     const r = step(CONTENT, s, { type: 'link', caseId: 'c002', noteId: note001.id, hypId: 'perm' });
     expect(r.events[0]).toMatchObject({ type: 'blocked' });
@@ -244,9 +263,18 @@ describe('expedientes 002 y 003', () => {
 
   it('002: recorrido completo con autorización, alta y renovación de sesión', () => {
     let s = at002();
-    s = run(s, probe('c002', 't-groups'), probe('c002', 't-requests'), probe('c002', 'i-add-editors'), probe('c002', 'v-try')).state;
+    s = run(
+      s,
+      probe('c002', 't-groups'),
+      probe('c002', 't-requests'),
+      probe('c002', 'i-add-editors'),
+      probe('c002', 'v-try'),
+    ).state;
     expect(s.cases.c002!.confirmed).toBe(false);
-    s = run(s, probe('c002', 'i-renew-session'), probe('c002', 'v-try'), { type: 'close', caseId: 'c002' }).state;
+    s = run(s, probe('c002', 'i-renew-session'), probe('c002', 'v-try'), {
+      type: 'close',
+      caseId: 'c002',
+    }).state;
     expect(s.cases.c002!.outcome).toBe('verified');
   });
 
@@ -313,10 +341,19 @@ describe('práctica y resumen', () => {
   it('la práctica no consume tiempo y se resuelve con la secuencia enseñada', () => {
     let s = createGame(CONTENT, { mode: 'practice', nightId: 'practice', seed: 0 });
     const pp = (id: string) => probe('p001', id);
-    s = run(s, { type: 'answerCall' }, pp('q-what'), pp('t-output'), pp('i-headset'), pp('t-sound'), pp('v-hear'), {
-      type: 'close',
-      caseId: 'p001',
-    }).state;
+    s = run(
+      s,
+      { type: 'answerCall' },
+      pp('q-what'),
+      pp('t-output'),
+      pp('i-headset'),
+      pp('t-sound'),
+      pp('v-hear'),
+      {
+        type: 'close',
+        caseId: 'p001',
+      },
+    ).state;
     expect(s.minute).toBe(0);
     expect(s.cases.p001!.outcome).toBe('verified');
   });
@@ -325,10 +362,17 @@ describe('práctica y resumen', () => {
     let s = answered(QA_SEEDS.job);
     s = run(s, p1('t-queue'), p1('i-cancel-job'), p1('v-retry'), { type: 'close', caseId: 'c001' }).state;
     s = run(s, { type: 'pause', kind: 'eat' }, { type: 'take', caseId: 'c002' }).state;
-    s = run(s, probe('c002', 't-requests'), probe('c002', 'i-add-editors'), probe('c002', 'i-renew-session'), probe('c002', 'v-try'), {
-      type: 'close',
-      caseId: 'c002',
-    }).state;
+    s = run(
+      s,
+      probe('c002', 't-requests'),
+      probe('c002', 'i-add-editors'),
+      probe('c002', 'i-renew-session'),
+      probe('c002', 'v-try'),
+      {
+        type: 'close',
+        caseId: 'c002',
+      },
+    ).state;
     s = run(s, { type: 'endShift' }).state;
     const sum = nightSummary(CONTENT, s);
     expect(sum.resolved).toBe(2);

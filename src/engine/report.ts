@@ -81,7 +81,8 @@ export interface NightSummary {
 }
 
 /** Condición de mejora: al menos dos expedientes resueltos y confirmados en la noche. */
-export const UNLOCK_RULE = 'Resolver y verificar al menos dos expedientes de la noche habilita un segundo monitor.';
+export const UNLOCK_RULE =
+  'Resolver y verificar al menos dos expedientes de la noche habilita un segundo monitor.';
 
 export function nightSummary(content: Content, state: GameState): NightSummary {
   const reports = Object.keys(state.cases)

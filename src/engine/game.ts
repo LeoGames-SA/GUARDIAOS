@@ -103,7 +103,8 @@ export function createGame(content: Content, opts: NewGameOptions): GameState {
     if (def.deadline !== null && opts.mode === 'campaign')
       schedule(state, { at: def.deadline, kind: 'deadline', caseId: id });
     if (opts.mode === 'campaign')
-      for (const cb of def.callbacks ?? []) schedule(state, { at: cb.at, kind: 'callback', caseId: id, lines: cb.lines });
+      for (const cb of def.callbacks ?? [])
+        schedule(state, { at: cb.at, kind: 'callback', caseId: id, lines: cb.lines });
   }
   if (opts.mode === 'campaign') schedule(state, { at: night.end, kind: 'end', caseId: null });
   const events: GameEvent[] = [];
@@ -129,7 +130,16 @@ function history(
   result: string,
   cost: Minute,
 ) {
-  state.history.push({ id: nextId(state, 'h'), at: state.minute, caseId, origin, device, action, result, cost });
+  state.history.push({
+    id: nextId(state, 'h'),
+    at: state.minute,
+    caseId,
+    origin,
+    device,
+    action,
+    result,
+    cost,
+  });
 }
 
 /** Ejecuta en orden los eventos con hora ≤ minuto actual. */
@@ -158,21 +168,45 @@ function fire(content: Content, state: GameState, ev: ScheduledEvent, events: Ga
       events.push({ type: 'arrival', caseId: cs.id });
       if (def.channel === 'phone') {
         cs.status = 'pending';
-        ring(state, { caseId: cs.id, reason: 'new', since: state.minute, eventKey: ev.id, lines: [] }, events);
+        ring(
+          state,
+          { caseId: cs.id, reason: 'new', since: state.minute, eventKey: ev.id, lines: [] },
+          events,
+        );
       } else {
         cs.status = 'pending';
         if (def.message) cs.messages.push({ ...def.message, at: state.minute });
-        history(state, cs.id, def.channel === 'email' ? 'Correo' : 'Monitor', def.contact.device, 'Llegó ' + def.title, 'En bandeja de pendientes', 0);
+        history(
+          state,
+          cs.id,
+          def.channel === 'email' ? 'Correo' : 'Monitor',
+          def.contact.device,
+          'Llegó ' + def.title,
+          'En bandeja de pendientes',
+          0,
+        );
       }
       return;
     }
     case 'callback': {
       if (!cs || !def || isSettled(def, cs) || cs.arrivedAt === null) return;
       if (state.call || state.incoming) {
-        history(state, cs.id, 'Teléfono', def.contact.device, `${def.contact.short} intentó llamar`, 'La línea estaba ocupada', 0);
+        history(
+          state,
+          cs.id,
+          'Teléfono',
+          def.contact.device,
+          `${def.contact.short} intentó llamar`,
+          'La línea estaba ocupada',
+          0,
+        );
         return;
       }
-      ring(state, { caseId: cs.id, reason: 'callback', since: state.minute, eventKey: ev.id, lines: ev.lines ?? [] }, events);
+      ring(
+        state,
+        { caseId: cs.id, reason: 'callback', since: state.minute, eventKey: ev.id, lines: ev.lines ?? [] },
+        events,
+      );
       return;
     }
     case 'deadline': {
@@ -180,7 +214,15 @@ function fire(content: Content, state: GameState, ev: ScheduledEvent, events: Ga
       cs.deadlinePassed = true;
       cs.consequences.push(def.deadlineText);
       state.needs = { ...state.needs, stress: clamp(state.needs.stress + 8) };
-      history(state, cs.id, 'Turno', def.contact.device, `Venció el plazo de ${def.number}`, def.deadlineText, 0);
+      history(
+        state,
+        cs.id,
+        'Turno',
+        def.contact.device,
+        `Venció el plazo de ${def.number}`,
+        def.deadlineText,
+        0,
+      );
       events.push({ type: 'deadline', caseId: cs.id, text: def.deadlineText });
       return;
     }
@@ -215,7 +257,15 @@ function endShift(content: Content, state: GameState, events: GameEvent[]) {
     cs.status = 'closed';
     cs.closedAt = state.minute;
     const def = getCaseDef(content, cs.id);
-    history(state, cs.id, 'Turno', def.contact.device, `Traspaso de ${def.number}`, 'Queda pendiente para el turno mañana', 0);
+    history(
+      state,
+      cs.id,
+      'Turno',
+      def.contact.device,
+      `Traspaso de ${def.number}`,
+      'Queda pendiente para el turno mañana',
+      0,
+    );
   }
   state.activeIds = [];
   state.focusId = null;
@@ -277,7 +327,15 @@ function checkMissed(content: Content, state: GameState, until: Minute, events: 
       body: def.opening.contact,
     });
   }
-  history(state, cs.id, 'Teléfono', def.contact.device, 'Llamada perdida', 'Dejó un mensaje en el contestador', 0);
+  history(
+    state,
+    cs.id,
+    'Teléfono',
+    def.contact.device,
+    'Llamada perdida',
+    'Dejó un mensaje en el contestador',
+    0,
+  );
   events.push({ type: 'missed', caseId: cs.id });
 }
 
@@ -317,7 +375,15 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
           eventKey: inc.eventKey,
           lines: inc.lines.map((text) => ({ speaker: 'contact' as const, text })),
         };
-        history(state, cs.id, 'Teléfono', def.contact.device, `Atendí a ${def.contact.short}`, 'Llamada de seguimiento', 0);
+        history(
+          state,
+          cs.id,
+          'Teléfono',
+          def.contact.device,
+          `Atendí a ${def.contact.short}`,
+          'Llamada de seguimiento',
+          0,
+        );
       }
       return { state, events };
     }
@@ -349,7 +415,10 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
         eventKey: nextId(state, 'call'),
         lines: firstContact
           ? [
-              { speaker: 'nico', text: `${def.contact.short}, habla Nicolás, de soporte. Recién escucho tu mensaje.` },
+              {
+                speaker: 'nico',
+                text: `${def.contact.short}, habla Nicolás, de soporte. Recién escucho tu mensaje.`,
+              },
               ...(def.opening?.contact.slice(1) ?? []).map((text) => ({ speaker: 'contact' as const, text })),
             ]
           : [
@@ -367,8 +436,8 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       if (!call) return blocked('No hay llamada en curso.');
       const cs = state.cases[call.caseId]!;
       const def = getCaseDef(content, cs.id);
-      let nico = '';
-      let key = '';
+      let nico: string;
+      let key: string;
       if (action.kind === 'urgency') {
         nico = 'Entiendo la urgencia. Todavía estoy comprobando la causa.';
         key = `u:${call.eventKey}`;
@@ -407,7 +476,15 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       takeCase(state, cs, events);
       state.focusId = cs.id;
       const def = getCaseDef(content, cs.id);
-      history(state, cs.id, 'Centro de tickets', def.contact.device, `Tomé el expediente ${def.number}`, 'Asignado a Nico', 0);
+      history(
+        state,
+        cs.id,
+        'Centro de tickets',
+        def.contact.device,
+        `Tomé el expediente ${def.number}`,
+        'Asignado a Nico',
+        0,
+      );
       return { state, events };
     }
     case 'focus': {
@@ -422,7 +499,8 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       const cs = state.cases[action.caseId];
       if (!cs) return blocked('Expediente desconocido.');
       const def = getCaseDef(content, cs.id);
-      if (!cs.notes.some((n) => n.id === action.noteId)) return blocked('Esa nota no pertenece a este expediente.');
+      if (!cs.notes.some((n) => n.id === action.noteId))
+        return blocked('Esa nota no pertenece a este expediente.');
       if (!def.hypotheses.some((h) => h.id === action.hypId)) return blocked('Hipótesis desconocida.');
       const exists = cs.links.some((l) => l.noteId === action.noteId && l.hypId === action.hypId);
       if (action.type === 'link' && !exists) cs.links.push({ noteId: action.noteId, hypId: action.hypId });
@@ -434,7 +512,8 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       const cs = state.cases[action.caseId];
       if (!cs) return blocked('Expediente desconocido.');
       const def = getCaseDef(content, cs.id);
-      if (action.hypId && !def.hypotheses.some((h) => h.id === action.hypId)) return blocked('Hipótesis desconocida.');
+      if (action.hypId && !def.hypotheses.some((h) => h.id === action.hypId))
+        return blocked('Hipótesis desconocida.');
       cs.workingHyp = action.hypId;
       return { state, events };
     }
@@ -443,15 +522,16 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       if (!cs || cs.status !== 'active') return blocked('Sólo se puede cerrar un expediente activo.');
       const def = getCaseDef(content, cs.id);
       if (!def.isFixed(cs.world))
-        return blocked('El síntoma sigue presente según lo que sabemos: todavía no se puede cerrar como resuelto.');
+        return blocked(
+          'El síntoma sigue presente según lo que sabemos: todavía no se puede cerrar como resuelto.',
+        );
       if (!cs.confirmed)
         return blocked(
           def.channel === 'auto'
             ? 'Falta la verificación del canal: revalidar la alerta desde el monitor.'
             : `Falta que ${def.contact.short} confirme que funciona.`,
         );
-      for (const need of def.closeNeeds ?? [])
-        if (!cs.flags.includes(need.flag)) return blocked(need.reason);
+      for (const need of def.closeNeeds ?? []) if (!cs.flags.includes(need.flag)) return blocked(need.reason);
       const clean = !cs.deadlinePassed && cs.wrong === 0 && cs.consequences.length === 0;
       finishCase(content, state, cs, clean ? 'verified' : 'costly', events);
       return { state, events };
@@ -464,7 +544,15 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       cs.escalationAppropriate = def.escalation.appropriate(caseView(cs));
       const cost = state.mode === 'practice' ? 0 : 3;
       finishCase(content, state, cs, 'escalated', events);
-      history(state, cs.id, 'Centro de tickets', def.contact.device, def.escalation.label, def.escalation.explain(caseView(cs)), cost);
+      history(
+        state,
+        cs.id,
+        'Centro de tickets',
+        def.contact.device,
+        def.escalation.label,
+        def.escalation.explain(caseView(cs)),
+        cost,
+      );
       advance(content, state, cost, events);
       return { state, events };
     }
@@ -472,7 +560,11 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       if (state.mode === 'practice') return blocked('En la práctica no hay pausas: el reloj no corre.');
       if (state.call) return blocked('Terminá la llamada antes de tomarte una pausa.');
       const def = PAUSES[action.kind];
-      const res = def.apply(state.needs, { lastBallAt: state.lastBallAt, minute: state.minute, catClaimed: state.catClaimed });
+      const res = def.apply(state.needs, {
+        lastBallAt: state.lastBallAt,
+        minute: state.minute,
+        catClaimed: state.catClaimed,
+      });
       state.needs = res.needs;
       state.pauses.push({ kind: action.kind, at: state.minute, minutes: def.minutes });
       if (action.kind === 'ball') state.lastBallAt = state.minute;
@@ -505,7 +597,10 @@ function takeCase(state: GameState, cs: CaseState, events: GameEvent[]) {
   if (cs.status === 'active' || cs.status === 'closed') return;
   if (state.activeIds.length >= MAX_ACTIVE) {
     cs.status = 'pending';
-    events.push({ type: 'info', text: 'Ya tenés dos expedientes activos: este quedó en la bandeja de pendientes.' });
+    events.push({
+      type: 'info',
+      text: 'Ya tenés dos expedientes activos: este quedó en la bandeja de pendientes.',
+    });
     return;
   }
   cs.status = 'active';
@@ -532,7 +627,15 @@ function finishCase(
   if (state.incoming?.caseId === cs.id) state.incoming = null;
   if (!state.learned.includes(def.id)) state.learned.push(def.id);
   if (outcome !== 'escalated')
-    history(state, cs.id, 'Centro de tickets', def.contact.device, `Cerré ${def.number}`, outcomeLabel(outcome), 0);
+    history(
+      state,
+      cs.id,
+      'Centro de tickets',
+      def.contact.device,
+      `Cerré ${def.number}`,
+      outcomeLabel(outcome),
+      0,
+    );
   events.push({ type: 'closed', caseId: cs.id, outcome });
 }
 
@@ -562,13 +665,22 @@ function noteKind(probe: ProbeDef, def: CaseDef): NoteKind | null {
 }
 
 /** Costo que se mostrará antes de ejecutar (considera relectura gratis y penalizaciones visibles). */
-export function probeCost(state: GameState, cs: CaseState, probe: ProbeDef): { cost: Minute; reread: boolean } {
+export function probeCost(
+  state: GameState,
+  cs: CaseState,
+  probe: ProbeDef,
+): { cost: Minute; reread: boolean } {
   const reread = cs.runs.some((r) => r.probeId === probe.id && r.version === cs.version);
   if (reread || state.mode === 'practice') return { cost: 0, reread };
   return { cost: adjustedCost(probe.cost, state.needs), reread };
 }
 
-export function probeBlockReason(state: GameState, def: CaseDef, cs: CaseState, probe: ProbeDef): string | null {
+export function probeBlockReason(
+  state: GameState,
+  def: CaseDef,
+  cs: CaseState,
+  probe: ProbeDef,
+): string | null {
   if (cs.status === 'closed') return 'El expediente está cerrado.';
   if (cs.status !== 'active') return 'Primero tomá el expediente.';
   if (probe.app === 'phone' && state.call?.caseId !== cs.id)
@@ -576,7 +688,13 @@ export function probeBlockReason(state: GameState, def: CaseDef, cs: CaseState, 
   return probe.requires?.(caseView(cs)) ?? null;
 }
 
-function runProbe(content: Content, prev: GameState, state: GameState, caseId: string, probeId: string): StepResult {
+function runProbe(
+  content: Content,
+  prev: GameState,
+  state: GameState,
+  caseId: string,
+  probeId: string,
+): StepResult {
   const events: GameEvent[] = [];
   const cs = state.cases[caseId];
   if (!cs) return { state: prev, events: [{ type: 'blocked', reason: 'Expediente desconocido.' }] };
@@ -653,9 +771,23 @@ function runProbe(content: Content, prev: GameState, state: GameState, caseId: s
       });
   }
 
-  history(state, caseId, appLabel(probe.app), probe.target ?? def.contact.device, probe.label, res.summary, cost);
+  history(
+    state,
+    caseId,
+    appLabel(probe.app),
+    probe.target ?? def.contact.device,
+    probe.label,
+    res.summary,
+    cost,
+  );
   for (const s of res.schedule ?? [])
-    schedule(state, { at: state.minute + cost + s.after, kind: 'world', caseId, world: s.world, text: s.text });
+    schedule(state, {
+      at: state.minute + cost + s.after,
+      kind: 'world',
+      caseId,
+      world: s.world,
+      text: s.text,
+    });
   events.push({ type: 'result', caseId, probeId, reread: false });
   advance(content, state, cost, events);
   return { state, events };

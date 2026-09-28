@@ -148,7 +148,10 @@ export const case002: CaseDef = {
       label: 'Pedirle que cierre sesión y vuelva a entrar',
       line: 'Tomás, guardá lo que tengas abierto, cerrá sesión en la PC y volvé a entrar, por favor.',
       cost: 6,
-      requires: (c) => (c.world.inEditors || c.world.inAdmin ? null : 'Todavía no hay cambios que requieran renovar la sesión.'),
+      requires: (c) =>
+        c.world.inEditors || c.world.inAdmin
+          ? null
+          : 'Todavía no hay cambios que requieran renovar la sesión.',
       run: (): ProbeResult => ({
         ...mailSaid('Listo, cerré sesión y volví a entrar.', 'Tomás cerró sesión y volvió a entrar', {}),
         world: { tokenFresh: true },
@@ -171,7 +174,8 @@ export const case002: CaseDef = {
       line: '¿Podés probar abrir \\\\srv-archivos\\Compras\\Licitaciones ahora y contarme qué pasa?',
       cost: 6,
       requires: (c) =>
-        ['i-add-editors', 'i-add-admin', 'i-reset-password', 'i-renew-session'].some(c.done) || c.done('q-relogin')
+        ['i-add-editors', 'i-add-admin', 'i-reset-password', 'i-renew-session'].some(c.done) ||
+        c.done('q-relogin')
           ? null
           : 'Todavía no cambiaste nada: probar de nuevo daría el mismo resultado.',
       run: (w): ProbeResult =>
@@ -207,7 +211,11 @@ export const case002: CaseDef = {
       cost: 1,
       console: ['usuario tibarra'],
       run: (): ProbeResult =>
-        t('Cuenta habilitada · sin bloqueo · contraseña vigente (vence en 41 días) · Departamento: Compras (actualizado el lunes por RRHH).', 'La cuenta de tibarra está activa, sin bloqueo; RRHH ya figura Compras', { acct: 'contradicts', perm: 'supports' }),
+        t(
+          'Cuenta habilitada · sin bloqueo · contraseña vigente (vence en 41 días) · Departamento: Compras (actualizado el lunes por RRHH).',
+          'La cuenta de tibarra está activa, sin bloqueo; RRHH ya figura Compras',
+          { acct: 'contradicts', perm: 'supports' },
+        ),
     },
     {
       id: 't-groups',
@@ -219,10 +227,25 @@ export const case002: CaseDef = {
       cost: 1,
       console: ['grupos tibarra'],
       run: (w): ProbeResult => {
-        const groups = ['GG_Todos', ...(w.inLogistics ? ['GG_Logistica_Editores'] : []), ...(w.inEditors ? ['GG_Compras_Editores'] : []), ...(w.inAdmin ? ['GG_Compras_Admin'] : [])];
+        const groups = [
+          'GG_Todos',
+          ...(w.inLogistics ? ['GG_Logistica_Editores'] : []),
+          ...(w.inEditors ? ['GG_Compras_Editores'] : []),
+          ...(w.inAdmin ? ['GG_Compras_Admin'] : []),
+        ];
         return w.inEditors || w.inAdmin
-          ? t(`Grupos: ${groups.join(', ')}.`, `tibarra ya figura en ${w.inEditors ? 'GG_Compras_Editores' : 'GG_Compras_Admin'}`, {}, groups)
-          : t(`Grupos: ${groups.join(', ')}.`, 'tibarra sólo está en GG_Todos y GG_Logistica_Editores: ningún grupo de Compras', { perm: 'supports' }, groups);
+          ? t(
+              `Grupos: ${groups.join(', ')}.`,
+              `tibarra ya figura en ${w.inEditors ? 'GG_Compras_Editores' : 'GG_Compras_Admin'}`,
+              {},
+              groups,
+            )
+          : t(
+              `Grupos: ${groups.join(', ')}.`,
+              'tibarra sólo está en GG_Todos y GG_Logistica_Editores: ningún grupo de Compras',
+              { perm: 'supports' },
+              groups,
+            );
       },
     },
     {
@@ -235,11 +258,16 @@ export const case002: CaseDef = {
       cost: 2,
       console: ['permisos compras'],
       run: (): ProbeResult =>
-        t('3 entradas de permiso.', 'La carpeta Compras da acceso a GG_Compras_Editores (modificar) y GG_Compras_Lectura (leer)', { perm: 'supports', down: 'contradicts' }, [
-          'GG_Compras_Editores · Modificar',
-          'GG_Compras_Lectura · Leer',
-          'GG_Compras_Admin · Control total',
-        ]),
+        t(
+          '3 entradas de permiso.',
+          'La carpeta Compras da acceso a GG_Compras_Editores (modificar) y GG_Compras_Lectura (leer)',
+          { perm: 'supports', down: 'contradicts' },
+          [
+            'GG_Compras_Editores · Modificar',
+            'GG_Compras_Lectura · Leer',
+            'GG_Compras_Admin · Control total',
+          ],
+        ),
     },
     {
       id: 't-effective',
@@ -252,8 +280,16 @@ export const case002: CaseDef = {
       console: ['acceso tibarra compras'],
       run: (w): ProbeResult =>
         w.inEditors || w.inAdmin
-          ? t(`Acceso efectivo: ${w.inAdmin ? 'Control total' : 'Modificar'} (según el directorio).`, `Según el directorio, tibarra ya tiene acceso ${w.inAdmin ? 'total' : 'de modificación'} a Compras`, {})
-          : t('Acceso efectivo: ninguno. Ningún grupo de la cuenta coincide con los permisos de la carpeta.', 'El acceso efectivo de tibarra sobre Compras es «ninguno»', { perm: 'supports' }),
+          ? t(
+              `Acceso efectivo: ${w.inAdmin ? 'Control total' : 'Modificar'} (según el directorio).`,
+              `Según el directorio, tibarra ya tiene acceso ${w.inAdmin ? 'total' : 'de modificación'} a Compras`,
+              {},
+            )
+          : t(
+              'Acceso efectivo: ninguno. Ningún grupo de la cuenta coincide con los permisos de la carpeta.',
+              'El acceso efectivo de tibarra sobre Compras es «ninguno»',
+              { perm: 'supports' },
+            ),
     },
     {
       id: 't-ping',
@@ -265,7 +301,10 @@ export const case002: CaseDef = {
       cost: 2,
       console: ['ping srv-archivos'],
       run: (): ProbeResult =>
-        t('srv-archivos [10.20.0.20]: responde, 1 ms.', 'srv-archivos responde desde PC-CMP-04', { net: 'contradicts', down: 'contradicts' }),
+        t('srv-archivos [10.20.0.20]: responde, 1 ms.', 'srv-archivos responde desde PC-CMP-04', {
+          net: 'contradicts',
+          down: 'contradicts',
+        }),
     },
     {
       id: 't-share-open',
@@ -277,8 +316,16 @@ export const case002: CaseDef = {
       cost: 2,
       run: (w): ProbeResult =>
         (w.inEditors || w.inAdmin) && w.tokenFresh
-          ? t('La carpeta abre: Licitaciones, Proveedores, Órdenes.', 'Desde la sesión de Tomás la carpeta Compras ya abre', {})
-          : t('El servidor respondió: «Acceso denegado».', 'El servidor responde a la PC de Tomás, pero deniega el acceso a Compras', { net: 'contradicts', down: 'contradicts', perm: 'supports' }),
+          ? t(
+              'La carpeta abre: Licitaciones, Proveedores, Órdenes.',
+              'Desde la sesión de Tomás la carpeta Compras ya abre',
+              {},
+            )
+          : t(
+              'El servidor respondió: «Acceso denegado».',
+              'El servidor responde a la PC de Tomás, pero deniega el acceso a Compras',
+              { net: 'contradicts', down: 'contradicts', perm: 'supports' },
+            ),
     },
     {
       id: 't-token',
@@ -291,8 +338,18 @@ export const case002: CaseDef = {
       console: ['sesion pc-cmp-04'],
       run: (w): ProbeResult =>
         w.tokenFresh
-          ? t(`Sesión iniciada con los grupos vigentes${w.inEditors ? ' (incluye GG_Compras_Editores)' : ''}.`, w.inEditors ? 'La sesión de Tomás ya incluye GG_Compras_Editores' : 'La sesión de Tomás lleva sus grupos vigentes', {})
-          : t('La sesión se inició a las 22:48: no incluye los grupos agregados después.', 'La sesión de Tomás es anterior al alta: no incluye el grupo nuevo', { perm: 'supports' }),
+          ? t(
+              `Sesión iniciada con los grupos vigentes${w.inEditors ? ' (incluye GG_Compras_Editores)' : ''}.`,
+              w.inEditors
+                ? 'La sesión de Tomás ya incluye GG_Compras_Editores'
+                : 'La sesión de Tomás lleva sus grupos vigentes',
+              {},
+            )
+          : t(
+              'La sesión se inició a las 22:48: no incluye los grupos agregados después.',
+              'La sesión de Tomás es anterior al alta: no incluye el grupo nuevo',
+              { perm: 'supports' },
+            ),
     },
     {
       id: 't-events',
@@ -304,10 +361,15 @@ export const case002: CaseDef = {
       cost: 3,
       console: ['eventos srv-archivos'],
       run: (): ProbeResult =>
-        t('2 auditorías de acceso denegado.', 'El registro de seguridad muestra accesos denegados a tibarra sobre Compras (23:05 y 23:12)', { perm: 'supports', net: 'contradicts', down: 'contradicts' }, [
-          '23:05 · Auditoría · Acceso denegado · tibarra · \\\\srv-archivos\\Compras · motivo: sin permiso',
-          '23:12 · Auditoría · Acceso denegado · tibarra · \\\\srv-archivos\\Compras · motivo: sin permiso',
-        ]),
+        t(
+          '2 auditorías de acceso denegado.',
+          'El registro de seguridad muestra accesos denegados a tibarra sobre Compras (23:05 y 23:12)',
+          { perm: 'supports', net: 'contradicts', down: 'contradicts' },
+          [
+            '23:05 · Auditoría · Acceso denegado · tibarra · \\\\srv-archivos\\Compras · motivo: sin permiso',
+            '23:12 · Auditoría · Acceso denegado · tibarra · \\\\srv-archivos\\Compras · motivo: sin permiso',
+          ],
+        ),
     },
     {
       id: 't-requests',
@@ -318,12 +380,17 @@ export const case002: CaseDef = {
       asks: '¿Hay una autorización registrada para su acceso?',
       cost: 2,
       run: (): ProbeResult => ({
-        ...t('1 solicitud aprobada: RRHH-2291.', 'Solicitud RRHH-2291 aprobada: alta de tibarra en GG_Compras_Editores y baja de Logística', { perm: 'supports' }, [
-          'RRHH-2291 · Cambio de función: Tomás Ibarra, Logística → Compras',
-          'Aprobó: Laura Benítez (Jefa de Compras) · lunes 09:12',
-          'Acción: agregar a GG_Compras_Editores · retirar de GG_Logistica_Editores',
-          'Estado: aprobada, pendiente de ejecución',
-        ]),
+        ...t(
+          '1 solicitud aprobada: RRHH-2291.',
+          'Solicitud RRHH-2291 aprobada: alta de tibarra en GG_Compras_Editores y baja de Logística',
+          { perm: 'supports' },
+          [
+            'RRHH-2291 · Cambio de función: Tomás Ibarra, Logística → Compras',
+            'Aprobó: Laura Benítez (Jefa de Compras) · lunes 09:12',
+            'Acción: agregar a GG_Compras_Editores · retirar de GG_Logistica_Editores',
+            'Estado: aprobada, pendiente de ejecución',
+          ],
+        ),
         flags: ['authFound'],
       }),
     },
@@ -344,7 +411,11 @@ export const case002: CaseDef = {
             : null
           : 'Falta una autorización registrada para este cambio. Buscala en el Centro de tickets o escalá el caso.',
       run: (): ProbeResult => ({
-        ...tr('Agregado a GG_Compras_Editores. Las sesiones abiertas no ven el cambio hasta renovarse.', 'Agregué a tibarra a GG_Compras_Editores (según RRHH-2291)', { perm: 'supports' }),
+        ...tr(
+          'Agregado a GG_Compras_Editores. Las sesiones abiertas no ven el cambio hasta renovarse.',
+          'Agregué a tibarra a GG_Compras_Editores (según RRHH-2291)',
+          { perm: 'supports' },
+        ),
         world: { inEditors: true, tokenFresh: false },
       }),
     },
@@ -358,10 +429,15 @@ export const case002: CaseDef = {
       risk: 'Control total de la carpeta. No figura en ninguna autorización: queda como hallazgo de seguridad.',
       requires: (c) => (c.world.inAdmin ? 'Ya pertenece a GG_Compras_Admin.' : null),
       run: (): ProbeResult => ({
-        ...tr('Agregado a GG_Compras_Admin (control total).', 'Agregué a tibarra a GG_Compras_Admin, sin autorización', { perm: 'supports' }),
+        ...tr(
+          'Agregado a GG_Compras_Admin (control total).',
+          'Agregué a tibarra a GG_Compras_Admin, sin autorización',
+          { perm: 'supports' },
+        ),
         world: { inAdmin: true, tokenFresh: false },
         wrong: true,
-        consequence: 'Se otorgó control total sin autorización: Seguridad lo registró como hallazgo y habrá que revertirlo.',
+        consequence:
+          'Se otorgó control total sin autorización: Seguridad lo registró como hallazgo y habrá que revertirlo.',
       }),
     },
     {
@@ -379,7 +455,11 @@ export const case002: CaseDef = {
             ? null
             : 'Sin la solicitud a la vista, no corresponde retirar accesos.',
       run: (): ProbeResult => ({
-        ...tr('Retirado de GG_Logistica_Editores.', 'Retiré a tibarra de GG_Logistica_Editores, como indica RRHH-2291', {}),
+        ...tr(
+          'Retirado de GG_Logistica_Editores.',
+          'Retiré a tibarra de GG_Logistica_Editores, como indica RRHH-2291',
+          {},
+        ),
         world: { inLogistics: false },
       }),
     },
@@ -393,11 +473,16 @@ export const case002: CaseDef = {
       risk: 'Tomás tendrá que elegir una contraseña nueva y cerrar todo lo que tenga abierto.',
       requires: (c) => (c.world.passwordReset ? 'Ya se restableció esta noche.' : null),
       run: (): ProbeResult => ({
-        ...tr('Contraseña restablecida. Tomás tuvo que volver a iniciar sesión.', 'Restablecí la contraseña de Tomás: tuvo que volver a entrar', { acct: 'neutral' }),
+        ...tr(
+          'Contraseña restablecida. Tomás tuvo que volver a iniciar sesión.',
+          'Restablecí la contraseña de Tomás: tuvo que volver a entrar',
+          { acct: 'neutral' },
+        ),
         world: { passwordReset: true, tokenFresh: true },
         wrong: true,
         trust: -1,
-        consequence: 'Se restableció una contraseña que funcionaba: Tomás perdió tiempo y hubo que avisar a Seguridad.',
+        consequence:
+          'Se restableció una contraseña que funcionaba: Tomás perdió tiempo y hubo que avisar a Seguridad.',
       }),
     },
     {
@@ -411,7 +496,11 @@ export const case002: CaseDef = {
       console: ['renovar sesion pc-cmp-04'],
       requires: (c) => (c.world.tokenFresh ? 'La sesión ya tiene las credenciales vigentes.' : null),
       run: (): ProbeResult => ({
-        ...tr('Credenciales renovadas: la sesión ahora incluye los grupos actuales.', 'Renové las credenciales de la sesión de Tomás', {}),
+        ...tr(
+          'Credenciales renovadas: la sesión ahora incluye los grupos actuales.',
+          'Renové las credenciales de la sesión de Tomás',
+          {},
+        ),
         world: { tokenFresh: true },
       }),
     },
@@ -422,7 +511,12 @@ export const case002: CaseDef = {
 function mailSaid(reply: string, note: string, relations: ProbeResult['relations']): ProbeResult {
   return { summary: 'Respuesta recibida.', reply, note, relations };
 }
-function t(summary: string, note: string, relations: ProbeResult['relations'], detail?: string[]): ProbeResult {
+function t(
+  summary: string,
+  note: string,
+  relations: ProbeResult['relations'],
+  detail?: string[],
+): ProbeResult {
   return { summary, note, relations, ...(detail ? { detail } : {}) };
 }
 function tr(summary: string, note: string, relations: ProbeResult['relations']): ProbeResult {

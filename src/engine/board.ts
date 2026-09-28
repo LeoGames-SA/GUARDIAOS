@@ -32,8 +32,7 @@ export function readHypothesis(def: CaseDef, cs: CaseState, hypId: string): Hypo
   const supports = linked.filter((n) => relationOf(n, hypId) === 'supports');
   const contradicts = linked.filter((n) => relationOf(n, hypId) === 'contradicts');
   const neutral = linked.filter((n) => relationOf(n, hypId) === 'neutral');
-  const score =
-    supports.reduce((s, n) => s + weight(n), 0) - contradicts.reduce((s, n) => s + weight(n), 0);
+  const score = supports.reduce((s, n) => s + weight(n), 0) - contradicts.reduce((s, n) => s + weight(n), 0);
   const firmContra = contradicts.some((n) => n.kind !== 'said');
   let level: HypothesisReading['level'] = 'sin respaldo';
   if (firmContra && score <= 0) level = 'contradicha';
@@ -71,7 +70,8 @@ export function briefReading(def: CaseDef, cs: CaseState, hypId: string): string
       );
     if (r.contradicts.length)
       parts.push(`La contradicen ${r.contradicts.length} nota${r.contradicts.length > 1 ? 's' : ''}.`);
-    if (r.neutral.length) parts.push(`${r.neutral.length} conectada${r.neutral.length > 1 ? 's' : ''} no distingue.`);
+    if (r.neutral.length)
+      parts.push(`${r.neutral.length} conectada${r.neutral.length > 1 ? 's' : ''} no distingue.`);
   }
   if (r.openContradictions.length)
     parts.push('Hay una comprobación en la pizarra que no encaja con ella: revisala.');

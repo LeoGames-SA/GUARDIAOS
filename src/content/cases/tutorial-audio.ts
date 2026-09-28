@@ -86,7 +86,8 @@ export const tutorialAudio: CaseDef = {
       cost: 1,
       run: (): ProbeResult => ({
         summary: 'Auriculares en el cajón; monitor sin saber.',
-        reply: 'Hay unos auriculares enchufados, pero están en el cajón. Y el monitor… no sé si tiene parlantes.',
+        reply:
+          'Hay unos auriculares enchufados, pero están en el cajón. Y el monitor… no sé si tiene parlantes.',
         note: 'Marta dice que hay auriculares conectados y no sabe si el monitor tiene parlantes',
         relations: { out: 'supports' },
       }),
@@ -101,10 +102,18 @@ export const tutorialAudio: CaseDef = {
       cost: 1,
       run: (w): ProbeResult =>
         w.output === 'headset'
-          ? { summary: 'Salida predeterminada: Auriculares USB.', note: 'La salida de PC-REC-01 ya es Auriculares USB', relations: {} }
+          ? {
+              summary: 'Salida predeterminada: Auriculares USB.',
+              note: 'La salida de PC-REC-01 ya es Auriculares USB',
+              relations: {},
+            }
           : {
-              summary: 'Salida predeterminada: Monitor HDMI (sin altavoces). También conectado: Auriculares USB.',
-              detail: ['● Monitor HDMI — predeterminado — sin altavoces', '○ Auriculares USB — conectado, disponible'],
+              summary:
+                'Salida predeterminada: Monitor HDMI (sin altavoces). También conectado: Auriculares USB.',
+              detail: [
+                '● Monitor HDMI — predeterminado — sin altavoces',
+                '○ Auriculares USB — conectado, disponible',
+              ],
               note: 'La salida de sonido de PC-REC-01 es el monitor HDMI, que no tiene altavoces',
               relations: { out: 'supports', broken: 'neutral' },
             },
@@ -165,8 +174,17 @@ export const tutorialAudio: CaseDef = {
       cost: 1,
       run: (w): ProbeResult =>
         w.output === 'headset'
-          ? { summary: 'Sonido de prueba enviado a Auriculares USB: el medidor de nivel se movió.', note: 'El sonido de prueba llega a los Auriculares USB', relations: { broken: 'contradicts' } }
-          : { summary: 'Sonido de prueba enviado a Monitor HDMI: el medidor se mueve, pero el monitor no tiene altavoces.', note: 'El sonido de prueba sale hacia el monitor HDMI', relations: { out: 'supports' } },
+          ? {
+              summary: 'Sonido de prueba enviado a Auriculares USB: el medidor de nivel se movió.',
+              note: 'El sonido de prueba llega a los Auriculares USB',
+              relations: { broken: 'contradicts' },
+            }
+          : {
+              summary:
+                'Sonido de prueba enviado a Monitor HDMI: el medidor se mueve, pero el monitor no tiene altavoces.',
+              note: 'El sonido de prueba sale hacia el monitor HDMI',
+              relations: { out: 'supports' },
+            },
     },
     {
       id: 'v-hear',
@@ -175,11 +193,21 @@ export const tutorialAudio: CaseDef = {
       label: '¿Ahora lo escuchás?',
       line: 'Ponete los auriculares y probá de nuevo el video. ¿Ahora lo escuchás?',
       cost: 1,
-      requires: (c) => (c.done('i-headset') || c.done('i-volume') ? null : 'Primero cambiá algo en su equipo.'),
+      requires: (c) =>
+        c.done('i-headset') || c.done('i-volume') ? null : 'Primero cambiá algo en su equipo.',
       run: (w): ProbeResult =>
         w.output === 'headset'
-          ? { summary: 'Marta confirma que se escucha.', reply: '¡Sí! Ahora se escucha perfecto. ¡Gracias!', note: 'Marta confirma que ahora se escucha', confirms: true }
-          : { summary: 'Sigue sin escuchar.', reply: 'Mmm, no. Sigue sin escucharse nada.', note: 'Marta dice que sigue sin escucharse' },
+          ? {
+              summary: 'Marta confirma que se escucha.',
+              reply: '¡Sí! Ahora se escucha perfecto. ¡Gracias!',
+              note: 'Marta confirma que ahora se escucha',
+              confirms: true,
+            }
+          : {
+              summary: 'Sigue sin escuchar.',
+              reply: 'Mmm, no. Sigue sin escucharse nada.',
+              note: 'Marta dice que sigue sin escucharse',
+            },
     },
   ],
   isFixed,

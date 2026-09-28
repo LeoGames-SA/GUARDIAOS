@@ -8,7 +8,12 @@ export const case003: CaseDef = {
   number: '003',
   title: 'Portal del Personal sin servicio',
   channel: 'auto',
-  contact: { name: 'Monitor de servicios', short: 'el monitor', role: 'Alerta automática', device: 'SRV-APP-02' },
+  contact: {
+    name: 'Monitor de servicios',
+    short: 'el monitor',
+    role: 'Alerta automática',
+    device: 'SRV-APP-02',
+  },
   knownAtStart: true,
   teaser: 'Alerta MON-5531: el portal responde HTTP 503.',
   summary:
@@ -72,15 +77,20 @@ export const case003: CaseDef = {
       ],
     },
   ],
-  deadlineText: 'A las 04:00 el portal seguía caído: el turno mañana no pudo cargar novedades y Supervisión pidió un informe.',
+  deadlineText:
+    'A las 04:00 el portal seguía caído: el turno mañana no pudo cargar novedades y Supervisión pidió un informe.',
   escalation: {
     label: 'Escalar a Guardia de Sistemas (llamada de emergencia)',
     appropriate: () => false,
-    explain: () => 'El procedimiento de guardia cubre iniciar el servicio: despertar a Sistemas no hacía falta.',
+    explain: () =>
+      'El procedimiento de guardia cubre iniciar el servicio: despertar a Sistemas no hacía falta.',
   },
   closeNeeds: [{ flag: 'published', reason: 'Falta comunicar el resultado en el ticket de la alerta.' }],
   checklist: [
-    { probe: 'i-autostart', text: 'Dejar el servicio con inicio automático, como indica el procedimiento posterior al mantenimiento' },
+    {
+      probe: 'i-autostart',
+      text: 'Dejar el servicio con inicio automático, como indica el procedimiento posterior al mantenimiento',
+    },
     { probe: 't-health', text: 'Comprobar la página de salud además del monitor externo' },
   ],
   learned:
@@ -96,7 +106,11 @@ export const case003: CaseDef = {
       cost: 2,
       console: ['ping portal.mutualsur.local', 'ping portal'],
       run: (): ProbeResult =>
-        t('portal.mutualsur.local [10.20.1.30]: responde, 1 ms. Coincide con el inventario.', 'portal.mutualsur.local resuelve a 10.20.1.30 y responde', { net: 'contradicts', off: 'contradicts' }),
+        t(
+          'portal.mutualsur.local [10.20.1.30]: responde, 1 ms. Coincide con el inventario.',
+          'portal.mutualsur.local resuelve a 10.20.1.30 y responde',
+          { net: 'contradicts', off: 'contradicts' },
+        ),
     },
     {
       id: 't-portal',
@@ -109,7 +123,11 @@ export const case003: CaseDef = {
       run: (w): ProbeResult =>
         w.appRunning
           ? t('El portal carga normalmente.', 'El portal carga desde el navegador de Nico', {})
-          : t('503 Servicio no disponible (lo devuelve el servidor web).', 'El portal devuelve 503 desde el navegador de Nico: el servidor web contesta', { off: 'contradicts', net: 'contradicts' }),
+          : t(
+              '503 Servicio no disponible (lo devuelve el servidor web).',
+              'El portal devuelve 503 desde el navegador de Nico: el servidor web contesta',
+              { off: 'contradicts', net: 'contradicts' },
+            ),
     },
     {
       id: 't-health',
@@ -121,7 +139,11 @@ export const case003: CaseDef = {
       cost: 1,
       run: (w): ProbeResult =>
         w.appRunning
-          ? t('200 OK · aplicación: ok · base de datos: ok.', 'La página /salud responde 200 desde el navegador de Nico', {})
+          ? t(
+              '200 OK · aplicación: ok · base de datos: ok.',
+              'La página /salud responde 200 desde el navegador de Nico',
+              {},
+            )
           : t('503 Servicio no disponible.', 'La página /salud también devuelve 503', {}),
     },
     {
@@ -156,7 +178,12 @@ export const case003: CaseDef = {
       asks: '¿La base de datos del portal atiende conexiones?',
       cost: 2,
       console: ['bd srv-bd-01'],
-      run: (): ProbeResult => t('SRV-BD-01:5432 acepta conexiones. Latencia 3 ms.', 'La base de datos SRV-BD-01 acepta conexiones', { db: 'contradicts' }),
+      run: (): ProbeResult =>
+        t(
+          'SRV-BD-01:5432 acepta conexiones. Latencia 3 ms.',
+          'La base de datos SRV-BD-01 acepta conexiones',
+          { db: 'contradicts' },
+        ),
     },
     {
       id: 't-events',
@@ -168,12 +195,17 @@ export const case003: CaseDef = {
       cost: 3,
       console: ['eventos srv-app-02', 'eventos portal'],
       run: (): ProbeResult =>
-        t('4 eventos.', 'Eventos de SRV-APP-02: reinicio 00:33 por mantenimiento; PortalPersonal no se inició (inicio manual)', { svc: 'supports', off: 'contradicts' }, [
-          '00:31 · Info · Parche de seguridad instalado; reinicio programado',
-          '00:33 · Info · Sistema reiniciado',
-          '00:36 · Info · Servidor web iniciado',
-          '00:36 · Advertencia · PortalPersonal no se inició: tipo de inicio «Manual»',
-        ]),
+        t(
+          '4 eventos.',
+          'Eventos de SRV-APP-02: reinicio 00:33 por mantenimiento; PortalPersonal no se inició (inicio manual)',
+          { svc: 'supports', off: 'contradicts' },
+          [
+            '00:31 · Info · Parche de seguridad instalado; reinicio programado',
+            '00:33 · Info · Sistema reiniciado',
+            '00:36 · Info · Servidor web iniciado',
+            '00:36 · Advertencia · PortalPersonal no se inició: tipo de inicio «Manual»',
+          ],
+        ),
     },
     {
       id: 'd-maintenance',
@@ -184,12 +216,17 @@ export const case003: CaseDef = {
       asks: '¿Hubo trabajos planificados esta noche?',
       cost: 0,
       run: (): ProbeResult =>
-        t('Aviso de mantenimiento', 'Aviso: mantenimiento en SRV-APP-02 a las 00:30 (parche con reinicio)', { svc: 'supports' }, [
-          'Ventana: hoy 00:30 – 00:45 · SRV-APP-02',
-          'Tarea: parche de seguridad mensual con reinicio.',
-          'Después del reinicio: verificar que PortalPersonal quede en ejecución y con inicio automático.',
-          'Responsable: Sistemas (no presencial).',
-        ]),
+        t(
+          'Aviso de mantenimiento',
+          'Aviso: mantenimiento en SRV-APP-02 a las 00:30 (parche con reinicio)',
+          { svc: 'supports' },
+          [
+            'Ventana: hoy 00:30 – 00:45 · SRV-APP-02',
+            'Tarea: parche de seguridad mensual con reinicio.',
+            'Después del reinicio: verificar que PortalPersonal quede en ejecución y con inicio automático.',
+            'Responsable: Sistemas (no presencial).',
+          ],
+        ),
     },
     {
       id: 'i-start-app',
@@ -202,7 +239,11 @@ export const case003: CaseDef = {
       console: ['iniciar servicio portal', 'iniciar servicio srv-app-02 portalpersonal'],
       requires: (c) => (c.world.appRunning ? 'PortalPersonal ya está en ejecución.' : null),
       run: (): ProbeResult => ({
-        ...tr('PortalPersonal en ejecución. El servidor web ya tiene a quién pasarle los pedidos.', 'Inicié PortalPersonal: quedó en ejecución', { svc: 'supports' }),
+        ...tr(
+          'PortalPersonal en ejecución. El servidor web ya tiene a quién pasarle los pedidos.',
+          'Inicié PortalPersonal: quedó en ejecución',
+          { svc: 'supports' },
+        ),
         world: { appRunning: true },
       }),
     },
@@ -216,7 +257,9 @@ export const case003: CaseDef = {
       risk: 'Sólo cambia el tipo de inicio. El procedimiento posterior al mantenimiento lo pide.',
       requires: (c) => (c.world.autoStart ? 'Ya tiene inicio automático.' : null),
       run: (): ProbeResult => ({
-        ...tr('Tipo de inicio: Automático.', 'Dejé PortalPersonal con inicio automático', { svc: 'supports' }),
+        ...tr('Tipo de inicio: Automático.', 'Dejé PortalPersonal con inicio automático', {
+          svc: 'supports',
+        }),
         world: { autoStart: true },
       }),
     },
@@ -230,8 +273,12 @@ export const case003: CaseDef = {
       risk: 'Corta por unos segundos todas las páginas del servidor.',
       run: (w): ProbeResult =>
         tr(
-          w.appRunning ? 'El servidor web se reinició. El portal sigue respondiendo.' : 'El servidor web se reinició. Sigue devolviendo 503.',
-          w.appRunning ? 'Reinicié el servidor web: el portal sigue bien' : 'Reinicié el servidor web: el portal sigue en 503',
+          w.appRunning
+            ? 'El servidor web se reinició. El portal sigue respondiendo.'
+            : 'El servidor web se reinició. Sigue devolviendo 503.',
+          w.appRunning
+            ? 'Reinicié el servidor web: el portal sigue bien'
+            : 'Reinicié el servidor web: el portal sigue en 503',
           w.appRunning ? {} : { svc: 'supports' },
         ),
     },
@@ -248,7 +295,9 @@ export const case003: CaseDef = {
           w.autoStart
             ? 'El servidor reinició y todos los servicios volvieron.'
             : 'El servidor reinició. El servidor web volvió; PortalPersonal sigue detenido (inicio manual).',
-          w.autoStart ? 'Reinicié SRV-APP-02: volvió todo' : 'Reinicié SRV-APP-02 completo: PortalPersonal volvió a quedar detenido',
+          w.autoStart
+            ? 'Reinicié SRV-APP-02: volvió todo'
+            : 'Reinicié SRV-APP-02 completo: PortalPersonal volvió a quedar detenido',
           w.autoStart ? {} : { svc: 'supports' },
         ),
         world: { appRunning: w.autoStart === true },
@@ -265,7 +314,9 @@ export const case003: CaseDef = {
       asks: '¿El portal responde bien desde la red de sucursales, donde se detectó la falla?',
       cost: 2,
       requires: (c) =>
-        ['i-start-app', 'i-restart-web', 'i-reboot'].some(c.done) ? null : 'Todavía no cambiaste nada: la alerta seguiría igual.',
+        ['i-start-app', 'i-restart-web', 'i-reboot'].some(c.done)
+          ? null
+          : 'Todavía no cambiaste nada: la alerta seguiría igual.',
       run: (w): ProbeResult =>
         w.appRunning
           ? {
@@ -274,7 +325,10 @@ export const case003: CaseDef = {
               confirms: true,
               flags: ['monitorOk'],
             }
-          : { summary: 'Monitor: sigue 503 desde sucursales (3 de 3).', note: 'El monitor externo sigue viendo 503 desde sucursales' },
+          : {
+              summary: 'Monitor: sigue 503 desde sucursales (3 de 3).',
+              note: 'El monitor externo sigue viendo 503 desde sucursales',
+            },
     },
     {
       id: 'c-publish',
@@ -283,7 +337,8 @@ export const case003: CaseDef = {
       target: 'SRV-APP-02',
       label: 'Publicar diagnóstico y resolución en el ticket',
       cost: 1,
-      requires: (c) => (c.flags.includes('monitorOk') ? null : 'Publicá la resolución cuando el monitor la haya confirmado.'),
+      requires: (c) =>
+        c.flags.includes('monitorOk') ? null : 'Publicá la resolución cuando el monitor la haya confirmado.',
       run: (): ProbeResult => ({
         summary: 'Actualización publicada en MON-5531 y enviada a la lista de avisos del turno mañana.',
         flags: ['published'],
@@ -293,7 +348,12 @@ export const case003: CaseDef = {
   isFixed,
 };
 
-function t(summary: string, note: string, relations: ProbeResult['relations'], detail?: string[]): ProbeResult {
+function t(
+  summary: string,
+  note: string,
+  relations: ProbeResult['relations'],
+  detail?: string[],
+): ProbeResult {
   return { summary, note, relations, ...(detail ? { detail } : {}) };
 }
 function tr(summary: string, note: string, relations: ProbeResult['relations']): ProbeResult {

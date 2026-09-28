@@ -25,7 +25,10 @@ export interface PauseDef {
   label: string;
   minutes: Minute;
   effect: string;
-  apply: (n: Needs, ctx: { lastBallAt: Minute | null; minute: Minute; catClaimed: boolean }) => {
+  apply: (
+    n: Needs,
+    ctx: { lastBallAt: Minute | null; minute: Minute; catClaimed: boolean },
+  ) => {
     needs: Needs;
     text: string;
   };
@@ -57,7 +60,12 @@ export const PAUSES: Record<PauseKind, PauseDef> = {
     minutes: 20,
     effect: 'Energía +25, estrés −5.',
     apply: (n) => ({
-      needs: { ...n, energy: clamp(n.energy + 25), stress: clamp(n.stress - 5), bladder: clamp(n.bladder + 5) },
+      needs: {
+        ...n,
+        energy: clamp(n.energy + 25),
+        stress: clamp(n.stress - 5),
+        bladder: clamp(n.bladder + 5),
+      },
       text: 'Un sándwich tostado en la cocina del piso. Llena más de lo que parece.',
     }),
   },
@@ -100,7 +108,9 @@ export const PAUSES: Record<PauseKind, PauseDef> = {
       const fresh = ctx.lastBallAt === null || ctx.minute - ctx.lastBallAt >= 30;
       return {
         needs: { ...n, stress: clamp(n.stress - (fresh ? 6 : 1)) },
-        text: fresh ? 'Apretar, soltar. La cara sonriente no juzga.' : 'La pelota ya no hace mucho efecto tan seguido.',
+        text: fresh
+          ? 'Apretar, soltar. La cara sonriente no juzga.'
+          : 'La pelota ya no hace mucho efecto tan seguido.',
       };
     },
   },
@@ -111,7 +121,9 @@ export const PAUSES: Record<PauseKind, PauseDef> = {
     effect: 'Una vez por noche: estrés −5.',
     apply: (n, ctx) => ({
       needs: { ...n, stress: clamp(n.stress - (ctx.catClaimed ? 0 : 5)) },
-      text: ctx.catClaimed ? 'El gato sigue durmiendo.' : 'Un gatito durmiendo. Nico sonríe sin darse cuenta.',
+      text: ctx.catClaimed
+        ? 'El gato sigue durmiendo.'
+        : 'Un gatito durmiendo. Nico sonríe sin darse cuenta.',
     }),
   },
 };

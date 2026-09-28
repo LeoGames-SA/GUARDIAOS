@@ -20,7 +20,10 @@ export default tseslint.config(
     files: ['src/engine/**/*.ts'],
     rules: {
       'no-restricted-globals': ['error', 'window', 'document', 'localStorage', 'setTimeout', 'setInterval'],
-      'no-restricted-imports': ['error', { patterns: ['react', 'react-dom', '**/ui/**', '**/application/**', '**/persistence/**'] }],
+      'no-restricted-imports': [
+        'error',
+        { patterns: ['react', 'react-dom', '**/ui/**', '**/application/**', '**/persistence/**'] },
+      ],
     },
   },
   { files: ['scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
