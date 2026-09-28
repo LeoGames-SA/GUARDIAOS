@@ -16,9 +16,13 @@ Manifiesto de derivados: `src/content/art-manifest.json`. Posiciones: `src/conte
 ## Calibraciones
 
 - **Vidrio del monitor**: medido sobre el derivado con grilla al 5 %: x 10,3 %, y 9,7 %, ancho 79,5 %, alto 59,7 % (`MONITOR_GLASS`). La estimación del paquete (zona semitransparente) era más chica y desplazada.
-- **Auricular**: se midieron las dos horquillas de la base (eje a ~22–25° de la vertical, igual que el auricular). Escala y posición ajustadas para apoyar ambos extremos: `x 110, y 534, ancho 115` con la base en `x 60, y 522, ancho 400`. Verificado en montaje ampliado ×2 y en la escena.
-- **Mano con auricular**: anclada al borde inferior izquierdo (el brazo está cortado en el lienzo). Oculta el auricular suelto. Sin puntero.
-- **Mano con taza**: se muestra 1,6 s después de una pausa de café; oculta la taza de la mesa.
+- **Encuadre abierto** (`station.ts`): los objetos se reubicaron para que ninguno quede cortado en los bordes; la base del teléfono está en `x 64, y 566, ancho 330` y el auricular se deriva de ella con la calibración de las horquillas (`HANDSET_CAL`: desplazamiento 50/12 y ancho 115 sobre 400), así se mueven juntos. Coordenadas de escena (fondo 1672×941) separadas de las posiciones de la interfaz (`--sw/--sh/--sl/--sb`, escenario con tope de 1840 px).
+- **Visor del teléfono**: tres esquinas del LCD medidas sobre el dibujo (`PHONE_LCD`); el texto («LLAMADA», «EN ESPERA», «EN LÍNEA», hora) es SVG con una matriz afín que sigue la perspectiva del visor.
+- **Mano con auricular**: anclada al borde inferior izquierdo (el brazo está cortado en el lienzo), `x −10, y 700, ancho 160`. Oculta el auricular suelto; en espera se guarda y vuelve el auricular a la base. La tarjeta de la llamada va arriba a la izquierda y no baja hasta el teléfono (prueba e2e), así la mano queda a la vista. Sin puntero.
+- **Mano con taza**: al hacer clic en la taza, la mano levanta, acerca y devuelve la taza (2,1 s, se salta con clic/Esc/Enter/Espacio; 0,7 s estática con movimiento reducido). Oculta la taza de la mesa: nunca hay dos tazas.
+- **Sándwich**: el texto describe un sándwich tostado (como el dibujo). Cada comida deja un mordisco hecho con máscara CSS sobre el derivado (sin deformarlo ni editar el recurso); dos mordiscos como máximo, ubicados sobre zonas del pan que no pisan el plato.
+- **Cubo en la mano**: modelo 3D (three.js) con los colores del dibujo, luz cálida desde la lámpara (izquierda) y relleno frío del monitor. El sprite de la mesa se oculta mientras se sostiene y el objeto vuelve a su lugar con animación.
+- **Pelota en la mano**: el mismo dibujo, ampliado; se aplasta contra el borde inferior (escala 1,22 × 0,70, sombra más ancha y sombreado interno) y rebota al soltar. El sprite de la mesa se oculta mientras se sostiene.
 - **Mano con mouse**: no se usa. Con GuardiaOS abierto quedaría detrás del panel, y fuera de él no hay acción que la justifique sin parecer un cursor. Se documenta como decisión.
 - Mesa: la superficie empieza en y≈512 del fondo; todos los objetos apoyados tienen su base por debajo.
 - Segundo monitor: reutiliza la carcasa a 276 px de ancho a la derecha; con la mejora, el monitor principal se corre a la izquierda.
@@ -30,4 +34,4 @@ Lluvia recortada al vidrio (sólo `transform`, pausada con pestaña oculta y mov
 ## Pendiente artístico
 
 - La aprobación final del arte corresponde al usuario mirando la escena real (`docs/capturas`).
-- El texto «LLAMADA» del visor del teléfono es DOM sobre el LCD dibujado; con ángulo aproximado.
+- La mano con auricular queda parcialmente cortada por el borde inferior en 16:9 (el brazo del dibujo termina ahí): es intencional, pero conviene mirarlo en vivo.

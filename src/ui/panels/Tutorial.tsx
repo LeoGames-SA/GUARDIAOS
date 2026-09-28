@@ -37,7 +37,10 @@ export function tutorialStep(g: GameState, panel: PanelState | null): Step | nul
           text: 'Elegí la hipótesis que te parezca y tocá la nota para conectarla. Si dudás, el cuaderno tiene ayuda (es opcional).',
           focus: null,
         }
-      : { text: 'Esa comprobación ya está en la pizarra. Abrila: clic en el corcho.', focus: 'board' };
+      : {
+          text: 'Esa comprobación ya está en la pizarra. Abrila: clic en el corcho o en «Pizarra», en la llamada.',
+          focus: 'board',
+        };
   if (!cs.workingHyp)
     return { text: 'Si la nota la apoya, tomala como hipótesis de trabajo.', focus: 'board' };
   if (!done('i-headset')) {

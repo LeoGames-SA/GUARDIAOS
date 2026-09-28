@@ -74,13 +74,48 @@ await step('Mover ventana (arrastre)', async () => {
   await page.mouse.up();
 });
 await step('Cerrar monitor', () => page.keyboard.press('Escape'));
-await step('Abrir pizarra', () => page.getByRole('button', { name: 'Pizarra de pruebas' }).click());
+await step('Abrir pizarra', () =>
+  page.locator('aside.call').getByRole('button', { name: 'Pizarra', exact: true }).click(),
+);
 await step('Conectar nota', () => page.locator('.note').first().click());
 await step('Cerrar pizarra', () => page.keyboard.press('Escape'));
-await step('Cortar llamada', () => page.getByRole('button', { name: 'Cortar la llamada' }).click());
-await step('Abrir pausas', () => page.getByRole('button', { name: 'Pausa', exact: true }).click());
-await step('Tomar café', () => page.locator('.pauses li').first().getByRole('button').click());
-await step('Cerrar pausa', () => page.keyboard.press('Escape'));
+await step('Contraer llamada', () => page.getByRole('button', { name: 'Contraer la llamada' }).click());
+await step('Expandir llamada', () => page.getByRole('button', { name: 'Ver conversación' }).click());
+await step('Poner en espera', () => page.getByRole('button', { name: 'Poner en espera' }).click());
+await step('Retomar llamada', () => page.getByRole('button', { name: 'Retomar la llamada' }).click());
+await step('Cortar llamada', () =>
+  page.locator('aside.call').getByRole('button', { name: 'Cortar', exact: true }).click(),
+);
+await step('Café desde la taza', () => page.getByRole('button', { name: /Taza/ }).click());
+await step('Saltar el sorbo', () => page.getByRole('button', { name: 'Saltar ›' }).click());
+await step('Levantar cubo (carga 3D)', async () => {
+  await page.getByRole('button', { name: 'Cubo 3×3' }).click();
+  await page.getByText('Levantando el cubo…').waitFor({ state: 'detached' });
+});
+await page.waitForTimeout(500);
+const c = await page.locator('.cube-canvas').boundingBox();
+const drag = async (x0, y0, x1, y1) => {
+  await page.mouse.move(x0, y0);
+  await page.mouse.down();
+  for (let i = 1; i <= 20; i++) await page.mouse.move(x0 + ((x1 - x0) * i) / 20, y0 + ((y1 - y0) * i) / 20);
+  await page.mouse.up();
+};
+await step('Cubo: girar el objeto', () => drag(c.x + 12, c.y + 12, c.x + 200, c.y + 120));
+await step('Cubo: girar una capa', () =>
+  drag(c.x + c.width / 2, c.y + c.height * 0.62, c.x + c.width * 0.8, c.y + c.height * 0.62),
+);
+await step('Cubo: devolver', () => page.getByRole('button', { name: 'Devolver a la mesa' }).click());
+await page.waitForTimeout(500);
+await step('Levantar pelota', () => page.getByRole('button', { name: 'Pelota antiestrés' }).click());
+await page.waitForTimeout(500);
+await step('Apretar y soltar pelota', async () => {
+  const b = await page.getByRole('button', { name: 'Apretar la pelota' }).boundingBox();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(300);
+  await page.mouse.up();
+});
+await step('Pelota: devolver', () => page.getByRole('button', { name: /Devolver a la mesa/ }).click());
 
 const long = await page.evaluate(() => window.__perf.long);
 console.log(

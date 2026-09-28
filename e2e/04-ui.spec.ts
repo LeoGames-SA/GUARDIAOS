@@ -277,6 +277,24 @@ test('la llamada no mueve la mesa: atender, contraer, espera, retomar y cortar',
   const call = page.locator('aside.call');
   await expect(call).toContainText('En conversación');
   expect(await boxes()).toEqual(before);
+  // La tarjeta no tapa el teléfono (se ve la mano con el auricular) y deja libre parte del corcho.
+  const free = await page.evaluate(() => {
+    const card = document.querySelector('aside.call')!.getBoundingClientRect();
+    const phone = document.querySelector('[data-target=phone]')!.getBoundingClientRect();
+    const pose = document.querySelector('.pose-phone')!.getBoundingClientRect();
+    const board = document.querySelector('[data-target=board]')!.getBoundingClientRect();
+    return {
+      phone: card.bottom <= phone.top + 4,
+      pose: card.bottom <= pose.top,
+      boardX: board.right - 40,
+      boardY: board.top + board.height / 2,
+      boardFree: board.right - card.right > 60,
+    };
+  });
+  expect(free).toMatchObject({ phone: true, pose: true, boardFree: true });
+  await page.mouse.click(free.boardX, free.boardY);
+  await expect(page.getByRole('dialog', { name: /Pizarra/ })).toBeVisible();
+  await closePanel(page);
   await call.getByRole('button', { name: 'Poner en espera' }).click();
   await expect(call).toContainText('En espera');
   await expect(call).toContainText('te pongo un momento en espera');

@@ -28,8 +28,8 @@ test('primera partida: práctica jugable completa y transición a Elena', async 
   await expect(session).toContainText('Monitor HDMI');
   await closePanel(page);
 
-  // 4. Pizarra: conectar la comprobación con una hipótesis y tomarla.
-  await page.getByRole('button', { name: 'Pizarra de pruebas' }).click();
+  // 4. Pizarra (desde la tarjeta de la llamada): conectar la comprobación con una hipótesis y tomarla.
+  await page.locator('aside.call').getByRole('button', { name: 'Pizarra', exact: true }).click();
   await page.getByRole('button', { name: /sale por un dispositivo sin parlantes/ }).click();
   await page.getByRole('button', { name: /Comprobé: La salida de sonido/ }).click();
   await expect(page.locator('.note.on')).toHaveCount(1);

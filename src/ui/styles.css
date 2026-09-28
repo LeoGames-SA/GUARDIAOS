@@ -916,9 +916,14 @@ details > summary {
   place-items: center;
   pointer-events: none;
 }
+.menu {
+  /* Margen lateral del escenario del menú: en pantallas muy anchas el texto acompaña a la mesa. */
+  --menu-sw: min(100vw, calc(100vh * 1672 / 941), 2000px);
+  --menu-ml: max(0px, calc((100vw - var(--menu-sw)) / 2));
+}
 .menu-scene .stage {
   /* Encuadre completo del puesto (sin recortar la mesa), con margen ambientado alrededor. */
-  width: min(100vw, calc(100vh * 1672 / 941), 2000px);
+  width: var(--menu-sw);
   box-shadow: 0 0 120px #000c;
 }
 .menu-shade {
@@ -926,7 +931,13 @@ details > summary {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(90deg, #050d12f2 0%, #050d12d9 30%, #050d1266 52%, transparent 70%),
+    linear-gradient(
+      90deg,
+      #050d12f2 var(--menu-ml),
+      #050d12d9 calc(var(--menu-ml) + var(--menu-sw) * 0.3),
+      #050d1266 calc(var(--menu-ml) + var(--menu-sw) * 0.52),
+      transparent calc(var(--menu-ml) + var(--menu-sw) * 0.7)
+    ),
     linear-gradient(0deg, #050d12aa 0%, transparent 30%);
 }
 .menu-panel {
@@ -934,6 +945,7 @@ details > summary {
   z-index: 2;
   min-height: 100%;
   width: min(560px, 100%);
+  margin-left: var(--menu-ml);
   padding: clamp(28px, 8vh, 96px) clamp(20px, 5vw, 72px) 28px;
   display: flex;
   flex-direction: column;
@@ -1116,9 +1128,32 @@ details > summary {
 }
 .call-card {
   width: min(390px, calc(100vw - 24px));
-  max-height: calc(100vh - var(--hud-h) - 24px);
+  /* Arriba a la izquierda del escenario y sin bajar hasta el teléfono: la mano con el
+     auricular (y el aparato) quedan a la vista durante la conversación. */
+  top: calc(var(--hud-h) + var(--sb) + 12px);
+  bottom: auto;
+  max-height: calc(var(--sh) * 0.585 - 20px);
   display: flex;
   flex-direction: column;
+}
+.call-card .call-log-wrap {
+  flex: 1 1 auto;
+  min-height: 96px;
+}
+.call-card .call-foot {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+/* Espera, herramientas y cortar siempre a la vista; las preguntas se desplazan por encima. */
+.call-card .call-actions {
+  position: sticky;
+  bottom: -10px;
+  margin: 4px -12px -10px;
+  padding: 6px 12px 10px;
+  background: #0a1a21;
+  border-top: 1px solid #ffffff14;
+  z-index: 1;
 }
 .call-pill {
   display: flex;
@@ -2672,6 +2707,8 @@ details > summary {
   }
   .call-card {
     width: auto;
+    top: auto;
+    bottom: 8px;
     max-height: 62vh;
   }
   .call-log {

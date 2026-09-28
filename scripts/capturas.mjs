@@ -87,7 +87,8 @@ for (const size of SIZES) {
   });
   await shoot(size, 'llamada-pizarra', async (p, m) => {
     await investigate(p);
-    await tap(p, m, 'Pizarra de pruebas', 'Pizarra');
+    if (m) await tap(p, m, 'Pizarra de pruebas', 'Pizarra');
+    else await p.locator('aside.call').getByRole('button', { name: 'Pizarra', exact: true }).click();
   });
   await shoot(size, 'pizarra-vacia', async (p, m) => {
     await start(p);
@@ -137,6 +138,20 @@ for (const size of SIZES) {
     });
     await tap(p, m, /Sándwich/, 'Sándwich');
     await p.getByRole('button', { name: /Comer · 20 min/ }).click();
+  });
+  await shoot(size, 'cubo', async (p, m) => {
+    await start(p);
+    await p.evaluate(() => window.__tdg.cubeScramble());
+    await tap(p, m, 'Cubo 3×3', 'Cubo');
+    await p.getByText('Levantando el cubo…').waitFor({ state: 'detached' });
+  });
+  await shoot(size, 'pelota', async (p, m) => {
+    await start(p);
+    await tap(p, m, 'Pelota antiestrés', 'Pelota');
+    await p.waitForTimeout(500);
+    const b = await p.getByRole('button', { name: 'Apretar la pelota' }).boundingBox();
+    await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await p.mouse.down(); // se captura apretada
   });
   await shoot(size, 'informe', async (p) => {
     await start(p, 1);
