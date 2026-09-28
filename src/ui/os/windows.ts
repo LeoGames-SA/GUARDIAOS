@@ -35,23 +35,59 @@ function get(scope: string): WmState {
   }
   return s;
 }
+const STORAGE_KEY = 'tdg.ventanas';
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Recuerda la geometría de las ventanas (interfaz, no partida) entre recargas. */
+function persist() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(stores)));
+    } catch {
+      /* sin almacenamiento */
+    }
+  }, 300);
+}
+
+function restore() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw) as Record<string, WmState>;
+    for (const [scope, st] of Object.entries(data)) {
+      if (!st || !Array.isArray(st.wins)) continue;
+      const wins = st.wins.filter(
+        (w) => typeof w.id === 'string' && [w.x, w.y, w.w, w.h, w.z].every((n) => Number.isFinite(n)),
+      );
+      stores.set(scope, { wins, top: Math.max(1, ...wins.map((w) => w.z)), active: null });
+    }
+  } catch {
+    /* geometría dañada: se ignora */
+  }
+}
+restore();
+
 function set(scope: string, next: WmState) {
   stores.set(scope, next);
   version++;
   for (const l of listeners) l();
+  persist();
 }
 
 export const DEFAULT_SIZE: Partial<Record<AppId, [number, number]>> = {
-  tickets: [760, 520],
-  mail: [780, 520],
-  history: [760, 440],
-  console: [640, 400],
-  browser: [720, 500],
-  procedures: [640, 480],
+  tickets: [860, 600],
+  mail: [940, 620],
+  history: [820, 520],
+  console: [680, 440],
+  browser: [960, 640],
+  procedures: [720, 560],
+  events: [760, 560],
+  remote: [700, 560],
 };
 
 export const wm = {
-  open(scope: string, app: AppId, target?: string) {
+  open(scope: string, app: AppId, target?: string, bounds?: { x: number; y: number; w: number; h: number }) {
     const s = get(scope);
     const id = target ? `${app}:${target}` : app;
     const existing = s.wins.find((w) => w.id === id);
@@ -65,13 +101,19 @@ export const wm = {
       });
       return id;
     }
-    const n = s.wins.length;
-    const [w, h] = DEFAULT_SIZE[app] ?? [620, 470];
+    const n = s.wins.filter((x) => !x.min).length;
+    const area = bounds ?? { x: 150, y: 8, w: 1000, h: 640 };
+    const [dw, dh] = DEFAULT_SIZE[app] ?? [640, 480];
+    // Tamaño ajustado al área útil (a la derecha de los íconos, sobre la barra de tareas).
+    const w = Math.min(dw, area.w - 16);
+    const h = Math.min(dh, area.h - 16);
+    const slackX = Math.max(0, area.w - w - 8);
+    const slackY = Math.max(0, area.h - h - 8);
     const win: Win = {
       id,
       app,
-      x: 150 + ((n * 34) % 220),
-      y: 16 + ((n * 28) % 150),
+      x: area.x + Math.min(slackX, 8 + ((n * 36) % Math.max(1, slackX + 1))),
+      y: area.y + Math.min(slackY, 8 + ((n * 30) % Math.max(1, slackY + 1))),
       w,
       h,
       z: top,

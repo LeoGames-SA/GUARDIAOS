@@ -1357,14 +1357,13 @@ details > summary {
 .os-icons {
   list-style: none;
   margin: 0;
-  padding: 8px;
-  display: grid;
-  grid-template-rows: repeat(auto-fill, 38px);
-  grid-auto-flow: column;
-  grid-auto-columns: 122px;
-  gap: 1px 4px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 132px;
   height: 100%;
-  width: max-content;
+  overflow-y: auto;
 }
 .os-icon {
   display: flex;
@@ -1560,6 +1559,7 @@ details > summary {
   background: #c8412f;
 }
 .win-body {
+  container: win / inline-size;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -2788,4 +2788,450 @@ details > summary {
 }
 .call-card:focus {
   outline: none;
+}
+
+/* ------------------------------------------------------------ Correo */
+.mail-app {
+  flex-direction: row;
+  position: relative;
+}
+.mail-side {
+  width: 36%;
+  min-width: 200px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ccd6d2;
+  min-height: 0;
+}
+.mail-folders {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 2px;
+  border-bottom: 1px solid #ccd6d2;
+}
+.mail-folders [role='tab'] {
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 8px;
+  min-height: 32px;
+  color: #34494f;
+  font-weight: 600;
+}
+.mail-folders [role='tab'][aria-selected='true'] {
+  background: #d4e6ef;
+  border-color: #7fa9b8;
+  color: #13262c;
+}
+.mail-list {
+  flex: 1;
+  overflow: auto;
+}
+.mail-row {
+  gap: 2px;
+}
+.mail-row-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.mail-row-top b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.mail-row.unread b,
+.mail-row.unread .mail-subj {
+  font-weight: 800;
+}
+.mail-row .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1f6fb0;
+  flex-shrink: 0;
+}
+.mail-subj {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+.mail-time {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: #5a6f76;
+}
+.mail-row.draft b {
+  font-style: italic;
+}
+.mail-pane {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 10px 14px 16px;
+  position: relative;
+}
+.thread-head {
+  position: sticky;
+  top: -10px;
+  z-index: 2;
+  background: #eef0e8;
+  padding-top: 10px;
+  margin-top: -10px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #ccd6d2;
+}
+.thread-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.thread-head small {
+  color: #5a6f76;
+}
+.mail-msg {
+  background: #fff;
+  border: 1px solid #d3dbd7;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0 0 10px;
+}
+.mail-msg.sent {
+  background: #f4f1e6;
+  margin-left: 28px;
+}
+.mail-msg.current {
+  border-color: #7fa9b8;
+  box-shadow: 0 0 0 2px #7fa9b855;
+}
+.mail-msg-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mail-msg-head .mail-time {
+  margin-left: auto;
+}
+.mail-meta {
+  color: #5a6f76;
+  margin: 2px 0 6px;
+}
+.recv-tag {
+  color: #1f6fb0;
+}
+.sent-tag {
+  color: #7a5a14;
+}
+.attach-chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid #9fb6bd;
+  border-radius: 6px;
+  background: #eef4f6;
+}
+.attach-chip:hover {
+  background: #dcebf0;
+}
+.reply-label {
+  margin: 0;
+  color: #5a6f76;
+}
+.attach-viewer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #eef0e8f7;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+.attach-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.shot {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  background: repeating-linear-gradient(45deg, #1d3c47 0 12px, #1a3641 12px 24px);
+  border-radius: 8px;
+  padding: 16px;
+}
+.shot-win {
+  width: min(460px, 100%);
+  background: #f3f4ef;
+  border: 1px solid #8aa2aa;
+  border-radius: 6px;
+  box-shadow: 0 12px 30px #0008;
+  overflow: hidden;
+  color: #1a2a30;
+}
+.shot-title {
+  background: linear-gradient(#3d6a79, #2c5362);
+  color: #fff;
+  font-weight: 700;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+.shot-body {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+}
+.shot-body p {
+  margin: 0 0 6px;
+}
+.shot-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+.shot-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 14px 12px;
+}
+.shot-btn {
+  border: 1px solid #8aa2aa;
+  border-radius: 4px;
+  padding: 3px 18px;
+  background: #e3e9e5;
+}
+.shot-caption {
+  color: #d9e6e8;
+}
+
+/* ------------------------------------------------------------ Navegador */
+.browser-bar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 6px;
+  border-bottom: 1px solid #ccd6d2;
+  background: #e3e9e5;
+}
+.browser-bar .urlbar {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+}
+.nav-btn {
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 6px;
+  border: 1px solid #9fb6bd;
+  background: #f4f6f2;
+  font-size: 1rem;
+  color: #1a2a30;
+}
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.bookmarks .bm {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-height: 30px;
+  color: #2c4a53;
+  font-size: 0.82rem;
+}
+.bookmarks .bm:hover {
+  background: #d4e6ef;
+}
+.site-link {
+  color: #1d5a8a;
+}
+.site h3 {
+  font-size: 1.1rem;
+}
+.portal-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  margin: -12px -12px 0;
+  background: linear-gradient(90deg, #12495a, #1d6b73);
+  color: #fff;
+}
+.portal-head small {
+  display: block;
+  opacity: 0.8;
+}
+.portal-logo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #efb95f;
+  color: #2b1a04;
+  font-weight: 900;
+}
+.portal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  padding: 8px 2px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #d3dbd7;
+}
+.portal-nav [aria-current='page'] {
+  font-weight: 800;
+  text-decoration: underline;
+}
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.portal-card {
+  border: 1px solid #d3dbd7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fbfcf9;
+}
+.portal-card h4 {
+  margin: 0 0 6px;
+}
+.portal-card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.notice-card {
+  border-left: 4px solid #d99a3e;
+}
+.error-page {
+  max-width: 520px;
+  margin: 24px auto;
+  text-align: center;
+}
+.err-code {
+  font-family: var(--mono);
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin: 0;
+  color: #8a4b20;
+}
+.err-503 .err-code {
+  color: #b3261e;
+}
+.err-mantenimiento .err-code {
+  font-size: 1.4rem;
+  color: #8a6a14;
+}
+.err-sinred .err-code,
+.err-dns .err-code {
+  color: #4b6168;
+}
+.interstitial {
+  max-width: 520px;
+  margin: 24px auto;
+  text-align: center;
+}
+.status-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 14px;
+}
+.status-list li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 10px;
+  border-bottom: 1px solid #e0e6e3;
+}
+.status-list li span:last-child {
+  margin-left: auto;
+}
+.st-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #999;
+}
+.st-ok .st-dot {
+  background: #2e8b47;
+}
+.st-warn .st-dot {
+  background: #d99a3e;
+}
+.st-bad .st-dot {
+  background: #b3261e;
+}
+.kb-head {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #d3dbd7;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.kb-index {
+  padding-left: 18px;
+}
+.kb-index li {
+  margin-bottom: 8px;
+}
+.kb-index small {
+  display: block;
+  color: #5a6f76;
+}
+
+/* Ventanas angostas (móvil): una columna en el correo y barra del navegador en dos filas. */
+.mail-back {
+  display: none;
+}
+@container win (max-width: 560px) {
+  .mail-app {
+    flex-direction: column;
+  }
+  .mail-side {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    flex: 1;
+    border-right: 0;
+  }
+  .mail-app.has-sel .mail-side,
+  .mail-app:not(.has-sel) .mail-pane {
+    display: none;
+  }
+  .mail-back {
+    display: inline-flex;
+    align-self: flex-start;
+  }
+  .thread-head {
+    flex-wrap: wrap;
+  }
+  .browser-bar {
+    flex-wrap: wrap;
+  }
+  .browser-bar .urlbar {
+    flex-basis: 100%;
+    order: 9;
+  }
 }

@@ -38,6 +38,15 @@ export function GuardiaOS({ game, onClose, dual }: { game: GameState; onClose: (
   const state = useWm(scope);
   const deskRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 900, h: 560 });
+  /** Área útil para abrir ventanas: a la derecha de la columna de íconos. */
+  const usable = useCallback(() => {
+    const desk = deskRef.current;
+    if (!desk) return undefined;
+    const icons = desk.querySelector<HTMLElement>('.os-icons');
+    // En móvil los íconos van arriba (ancho completo): no restan ancho.
+    const iw = icons && icons.offsetWidth < desk.clientWidth / 2 ? icons.offsetWidth : 0;
+    return { x: iw + 4, y: 0, w: Math.max(320, desk.clientWidth - iw - 4), h: desk.clientHeight };
+  }, []);
   const [start, setStart] = useState(false);
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const store = useStore();
@@ -54,14 +63,14 @@ export function GuardiaOS({ game, onClose, dual }: { game: GameState; onClose: (
   const open = useCallback(
     (app: AppId, target?: string) => {
       setStart(false);
-      wm.open(scope, app, target);
+      wm.open(scope, app, target, usable());
     },
-    [scope],
+    [scope, usable],
   );
 
   // Primera apertura: Centro de tickets a mano.
   useEffect(() => {
-    if (state.wins.length === 0) wm.open(scope, 'tickets');
+    if (state.wins.length === 0) wm.open(scope, 'tickets', undefined, usable());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

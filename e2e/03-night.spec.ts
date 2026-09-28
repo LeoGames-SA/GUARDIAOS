@@ -27,6 +27,13 @@ async function solve001Job(page: Page) {
   await closeCase(page, 'Resuelto y verificado');
 }
 
+async function sendMail(mail: ReturnType<Page['locator']>, label: string) {
+  await mail
+    .locator('.reply', { hasText: label })
+    .getByRole('button', { name: /Enviar/ })
+    .click();
+}
+
 async function waitUntil(page: Page, hhmm: string) {
   await page.getByRole('button', { name: new RegExp(`Esperar.*${hhmm}`) }).click();
   await expect(page.locator('.hud-clock')).toContainText(hhmm);
@@ -47,15 +54,20 @@ test('noche completa: correo/permisos, alerta/aplicación, resumen, mejora y rej
   await startGuard(page, 1);
   await solve001Job(page);
 
-  // 002 por correo.
+  // 002 por correo: se toma desde el propio correo, sin pasar por el Centro de tickets.
   await waitUntil(page, '23:20');
-  await take(page, '002');
   await openMonitor(page);
   const mail = await openApp(page, 'Correo');
+  await expect(mail.locator('.mail-row.unread')).toHaveCount(1);
   await expect(mail).toContainText('No puedo entrar a la carpeta de Compras');
+  await mail.locator('.mail-row.unread').click();
+  await expect(mail.locator('.mail-row.unread')).toHaveCount(0);
+  await mail.getByRole('button', { name: 'Tomar expediente 002' }).click();
+  await expect(page.locator('.case-chip', { hasText: '002' })).toBeVisible();
   await mail.getByRole('button', { name: /acceso-denegado.png/ }).click();
-  await expect(mail).toContainText('Acceso denegado');
-  await mail.getByRole('button', { name: /Preguntar si hubo un cambio de puesto/ }).click();
+  await expect(mail.getByRole('img', { name: /Acceso denegado/ })).toBeVisible();
+  await mail.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await sendMail(mail, 'Preguntar si hubo un cambio de puesto');
   await expect(mail).toContainText('RRHH-2291');
   const acc = await openApp(page, 'Cuentas y permisos');
   // Sin autorización encontrada, la intervención explica por qué no está disponible.
@@ -70,15 +82,13 @@ test('noche completa: correo/permisos, alerta/aplicación, resumen, mejora y rej
   await runProbe(acc2, 'Agregar tibarra a GG_Compras_Editores');
   await runProbe(acc2, 'Retirar tibarra de GG_Logistica_Editores');
   const mail2 = await openApp(page, 'Correo');
-  await mail2.getByRole('option').first().click();
-  await mail2.getByRole('button', { name: /Pedirle que pruebe abrir la carpeta/ }).click();
+  await sendMail(mail2, 'Pedirle que pruebe abrir la carpeta');
   await expect(mail2).toContainText('No cerré sesión');
   const remote = await openApp(page, 'Acceso remoto');
   await remote.getByRole('button', { name: /PC-CMP-04/ }).click();
   await runProbe(page.locator('section.win-remote'), 'Renovar credenciales de la sesión');
   const mail3 = await openApp(page, 'Correo');
-  await mail3.getByRole('option').first().click();
-  await mail3.getByRole('button', { name: /Pedirle que pruebe abrir la carpeta/ }).click();
+  await sendMail(mail3, 'Pedirle que pruebe abrir la carpeta');
   await expect(mail3).toContainText('¡Entré!');
   await closePanel(page);
   await closeCase(page, 'Resuelto y verificado');
@@ -93,9 +103,13 @@ test('noche completa: correo/permisos, alerta/aplicación, resumen, mejora y rej
   await runProbe(svc, 'Iniciar el servicio PortalPersonal');
   await runProbe(svc, 'Configurar PortalPersonal con inicio automático');
   const br = await openApp(page, 'Navegador');
-  await br.getByRole('button', { name: /portal.mutualsur.local\/salud/ }).click();
-  await runProbe(br, 'Abrir /salud desde tu navegador');
-  await expect(br).toContainText('200 OK');
+  await br.getByRole('button', { name: /Cargar y anotar/ }).click(); // abrir el portal = comprobación con costo
+  await expect(br.locator('.portal-head')).toBeVisible();
+  await br.getByRole('link', { name: 'Estado de la aplicación' }).click();
+  await br.getByRole('button', { name: /Cargar y anotar/ }).click();
+  await expect(br).toContainText('estado: ok');
+  await br.getByRole('button', { name: 'Atrás' }).click();
+  await expect(br.locator('.portal-head')).toBeVisible();
   const tk3 = await openApp(page, 'Centro de tickets');
   await tk3.getByRole('option', { name: /#003/ }).click();
   await runProbe(tk3, 'Pedir revalidación al monitor externo');

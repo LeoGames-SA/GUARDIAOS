@@ -1,13 +1,14 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '../../application/context';
 import { CONTENT } from '../../content';
 import { DEVICES, type DeviceDef } from '../../content/devices';
 import { PROCEDURES, GLOSSARY } from '../../content/knowledge';
-import { artInfo } from '../../content/station';
 import { probeBlockReason, probeCost, outcomeLabel } from '../../engine/game';
 import { clock } from '../../engine/time';
-import type { AppId, CaseDef, CaseState, GameState, MailMessage, ProbeDef } from '../../engine/types';
+import type { AppId, CaseDef, CaseState, GameState, ProbeDef } from '../../engine/types';
 import { ProbeCard } from '../common/ProbeCard';
+import { MailApp } from './mail';
+import { BrowserApp } from './browser';
 import { wm } from './windows';
 
 type Open = (app: AppId, target?: string) => void;
@@ -173,7 +174,9 @@ function TicketsApp({ game, open }: AppProps) {
     pending: all.filter((c) => c.status === 'pending'),
     closed: all.filter((c) => c.status === 'closed'),
   };
-  const rows = lists[tab];
+  // Si la pestaña quedó vacía (por ejemplo, se tomó el expediente desde el correo), mostrar los activos.
+  const effTab = lists[tab].length === 0 && lists.active.length > 0 ? 'active' : tab;
+  const rows = lists[effTab];
   const current = rows.find((c) => c.id === sel) ?? rows[0] ?? null;
 
   return (
@@ -354,131 +357,7 @@ function TicketDetail({ game, cs, open }: { game: GameState; cs: CaseState; open
   );
 }
 
-// ------------------------------------------------------------------ Correo
-
-export function MailApp({ game }: AppProps) {
-  const msgs = useMemo(() => {
-    const out: { msg: MailMessage; caseId: string }[] = [];
-    for (const cs of Object.values(game.cases))
-      for (const m of cs.messages) out.push({ msg: m, caseId: cs.id });
-    return out.sort((a, b) => b.msg.at - a.msg.at);
-  }, [game.cases]);
-  const [sel, setSel] = useState<string | null>(null);
-  const [att, setAtt] = useState<string | null>(null);
-  const current = msgs.find((m) => m.msg.id === sel) ?? msgs[0] ?? null;
-  const cs = current ? game.cases[current.caseId]! : null;
-  const def = cs ? CONTENT.cases[cs.id]! : null;
-  const replies = def ? probesFor(def, 'mail') : [];
-
-  return (
-    <div className="app app-split">
-      <ul className="list app-col" role="listbox" aria-label="Bandeja de entrada">
-        {msgs.length === 0 && <li className="muted small pad">No hay mensajes todavía.</li>}
-        {msgs.map(({ msg, caseId }) => (
-          <li key={msg.id}>
-            <button
-              type="button"
-              role="option"
-              aria-selected={current?.msg.id === msg.id}
-              className={`list-row ${msg.outgoing ? 'out' : ''}`}
-              onClick={() => setSel(msg.id)}
-            >
-              <b>{msg.outgoing ? `Para: ${msg.to}` : msg.from.replace(/<.*>/, '')}</b>
-              <small>
-                {clock(msg.at)} · {CONTENT.cases[caseId]!.number} · {msg.subject}
-              </small>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="app-main">
-        {current && def && cs ? (
-          <article className="mail">
-            <h3>{current.msg.subject}</h3>
-            <p className="small muted">
-              De: {current.msg.from}{' '}
-              {current.msg.from.includes('mutualsur.local') && (
-                <span className="tag known">remitente interno conocido</span>
-              )}
-              <br />
-              Para: {current.msg.to} · {clock(current.msg.at)} · Expediente {def.number}
-            </p>
-            {current.msg.body.map((l, i) => (
-              <p key={i}>{l}</p>
-            ))}
-            {current.msg.attachments?.map((a) => (
-              <div key={a.name} className="attach">
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  aria-expanded={att === a.name}
-                  onClick={() => setAtt(att === a.name ? null : a.name)}
-                >
-                  📎 {a.name}
-                </button>
-                {att === a.name && <p className="attach-view">{a.description}</p>}
-              </div>
-            ))}
-            {replies.length > 0 && (
-              <section className="replies">
-                <h4>Responder</h4>
-                {cs.status === 'pending' && (
-                  <p className="small muted">Tomá el expediente en el Centro de tickets para responder.</p>
-                )}
-                {replies.map((p) => (
-                  <MailReply key={p.id} game={game} cs={cs} def={def} probe={p} onSent={() => setSel(null)} />
-                ))}
-              </section>
-            )}
-          </article>
-        ) : (
-          <p className="muted pad">Seleccioná un mensaje.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function MailReply({
-  game,
-  cs,
-  def,
-  probe,
-  onSent,
-}: {
-  game: GameState;
-  cs: CaseState;
-  def: CaseDef;
-  probe: ProbeDef;
-  onSent: () => void;
-}) {
-  const store = useStore();
-  const blocked = probeBlockReason(game, def, cs, probe);
-  const { cost, reread } = probeCost(game, cs, probe);
-  if (reread) return null;
-  return (
-    <div className="reply">
-      <p className="reply-text">«{probe.line}»</p>
-      {blocked ? (
-        <p className="small muted">🔒 {blocked}</p>
-      ) : (
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => {
-            store.dispatch({ type: 'probe', caseId: cs.id, probeId: probe.id });
-            onSent(); // mostrar la respuesta recién llegada
-          }}
-        >
-          Enviar: {probe.label}{' '}
-          <span className="cost">
-            · {game.mode === 'practice' ? 'sin reloj' : `${cost} min (incluye esperar la respuesta)`}
-          </span>
-        </button>
-      )}
-    </div>
-  );
-}
+export { MailApp } from './mail';
 
 // ------------------------------------------------------------------ Equipos: red, impresoras, servicios
 
@@ -805,138 +684,6 @@ function FilesApp({ game }: AppProps) {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------ Navegador (sitios locales simulados)
-
-const SITES = [
-  'portal.mutualsur.local',
-  'portal.mutualsur.local/salud',
-  'kb.mutualsur.local',
-  'gatitos.local',
-];
-
-function BrowserApp({ game }: AppProps) {
-  const [url, setUrl] = useState('kb.mutualsur.local');
-  const [input, setInput] = useState(url);
-  const go = (u: string) => {
-    const clean = u
-      .trim()
-      .replace(/^https?:\/\//, '')
-      .replace(/\/$/, '');
-    setUrl(clean);
-    setInput(clean);
-  };
-  return (
-    <div className="app browser">
-      <form
-        className="urlbar"
-        onSubmit={(e) => {
-          e.preventDefault();
-          go(input);
-        }}
-      >
-        <label className="sr-only" htmlFor="url">
-          Dirección
-        </label>
-        <input id="url" value={input} onChange={(e) => setInput(e.target.value)} spellCheck={false} />
-        <button type="submit" className="btn btn-sm">
-          Ir
-        </button>
-      </form>
-      <nav className="bookmarks" aria-label="Marcadores">
-        {SITES.map((s) => (
-          <button key={s} type="button" className="btn btn-sm btn-ghost" onClick={() => go(s)}>
-            {s === 'gatitos.local' ? '🐾' : '★'} {s}
-          </button>
-        ))}
-      </nav>
-      <div className="page">
-        <Site url={url} game={game} />
-      </div>
-    </div>
-  );
-}
-
-function Site({ url, game }: { url: string; game: GameState }) {
-  const store = useStore();
-  if (url.startsWith('portal.mutualsur.local')) {
-    const c = game.cases.c003;
-    const health = url.endsWith('/salud');
-    const probe = CONTENT.cases.c003?.probes.find((p) => p.id === (health ? 't-health' : 't-portal'));
-    if (c && c.status === 'active' && game.focusId === 'c003' && probe)
-      return <ProbeCard game={game} caseId="c003" probe={probe} />;
-    if (c && c.status === 'active')
-      return (
-        <p className="muted">
-          Esta comprobación pertenece al expediente 003: cambiá a ese expediente para registrarla.
-        </p>
-      );
-    if (c && (c.status === 'pending' || (c.status === 'scheduled' && game.minute >= 112)))
-      return (
-        <p className="muted">
-          Hay una alerta abierta sobre este sitio. Tomá el expediente en el Centro de tickets para
-          investigarla.
-        </p>
-      );
-    return (
-      <div className="site">
-        <h3>Portal del Personal · Mutual Sur</h3>
-        <p>Turnos, novedades y recibos. {health ? 'Estado: ok.' : 'Sin novedades para esta noche.'}</p>
-      </div>
-    );
-  }
-  if (url === 'kb.mutualsur.local') {
-    return (
-      <div className="site">
-        <h3>Base de conocimiento de Soporte</h3>
-        {PROCEDURES.map((a) => (
-          <details key={a.id}>
-            <summary>{a.title}</summary>
-            {a.body.map((b, i) => (
-              <p key={i}>{b}</p>
-            ))}
-          </details>
-        ))}
-        <p className="small muted">
-          Página interna. Sugerencias: soporte@mutualsur.local · Enlace no oficial del equipo: gatitos.local
-        </p>
-      </div>
-    );
-  }
-  if (url === 'gatitos.local') {
-    return (
-      <div className="site cat-site">
-        <h3>gatitos.local · «Michi de la guardia»</h3>
-        <p className="small muted">Página no oficial del equipo. Ilustración local, sin conexión externa.</p>
-        <div className="cat-frame">
-          <img
-            className="cat"
-            src={artInfo('cat-easter-egg').file}
-            alt="Un gatito naranja durmiendo hecho un ovillo"
-          />
-        </div>
-        {game.mode === 'campaign' ? (
-          <button
-            type="button"
-            className="btn"
-            onClick={() => store.dispatch({ type: 'pause', kind: 'cat' })}
-          >
-            Quedarse mirándolo un minuto{' '}
-            <span className="cost">· 1 min{game.catClaimed ? '' : ' · estrés −5 (una vez por noche)'}</span>
-          </button>
-        ) : (
-          <p className="small">En la práctica el reloj no corre: mirálo todo lo que quieras.</p>
-        )}
-      </div>
-    );
-  }
-  return (
-    <div className="site">
-      <h3>No se puede abrir «{url}»</h3>
-      <p>Esta PC sólo ve sitios internos simulados de Mutual Sur. No hay conexión externa.</p>
     </div>
   );
 }

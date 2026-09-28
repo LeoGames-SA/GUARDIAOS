@@ -273,3 +273,57 @@ test('pizarra vacía sobre corcho con acceso a archivados; menú sin avanzar la 
   await page.locator('.menu-main').click();
   expect(await page.locator('.hud-clock').innerText()).toBe(minute);
 });
+
+test('ventanas dentro del área útil, recordadas al recargar y corregidas al achicar la pantalla', async ({
+  page,
+}) => {
+  await fresh(page);
+  await startGuard(page, 1);
+  await openMonitor(page);
+  const inside = async () =>
+    page.evaluate(() => {
+      const d = document.querySelector('.os-desktop')!.getBoundingClientRect();
+      const icons = document.querySelector('.os-icons')!.getBoundingClientRect();
+      return (
+        [...document.querySelectorAll('section.win')].every((w) => {
+          const r = w.getBoundingClientRect();
+          return (
+            r.left >= d.left - 1 && r.top >= d.top - 1 && r.right <= d.right + 1 && r.bottom <= d.bottom + 1
+          );
+        }) &&
+        [...document.querySelectorAll('section.win')].every(
+          (w) => w.getBoundingClientRect().left >= icons.right - 1,
+        )
+      );
+    });
+  for (const app of ['Correo', 'Navegador', 'Historial', 'Consola']) await openApp(page, app);
+  expect(await inside()).toBe(true);
+  const hist = win(page, 'Historial');
+  const t = hist.locator('.win-title');
+  const b = (await t.boundingBox())!;
+  await page.mouse.move(b.x + 80, b.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 20, b.y + 60, { steps: 4 });
+  await page.mouse.up();
+  const moved = (await hist.boundingBox())!;
+  await page.waitForTimeout(400); // guardado diferido de la geometría
+  await page.reload();
+  await page
+    .getByRole('button', { name: /Continuar/ })
+    .first()
+    .click();
+  await openMonitor(page);
+  // Esperar el fin de la animación de apertura del monitor antes de medir.
+  await page.waitForTimeout(800);
+  const again = (await win(page, 'Historial').boundingBox())!;
+  expect(Math.abs(again.x - moved.x)).toBeLessThanOrEqual(2);
+  await page.setViewportSize({ width: 1024, height: 640 });
+  await page.waitForTimeout(200);
+  const controlsVisible = await page.evaluate(() =>
+    [...document.querySelectorAll('section.win .win-close')].every((c) => {
+      const r = c.getBoundingClientRect();
+      return r.right <= window.innerWidth && r.bottom <= window.innerHeight && r.left >= 0 && r.top >= 0;
+    }),
+  );
+  expect(controlsVisible).toBe(true);
+});
