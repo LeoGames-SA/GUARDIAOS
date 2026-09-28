@@ -60,6 +60,12 @@ export const tutorialAudio: CaseDef = {
     appropriate: () => false,
     explain: () => 'En la práctica no hace falta escalar: se puede resolver con las herramientas.',
   },
+  farewell: {
+    nico: 'Listo, Marta. Quedó configurado para los auriculares. Cualquier cosa, llamanos.',
+    warm: '¡Gracias! Ahora sí puedo seguir con la capacitación. ¡Buenas noches!',
+    costly: 'Gracias, ya se escucha. Buenas noches.',
+    cold: 'Bueno, gracias.',
+  },
   learned:
     'Audio: antes de tocar el volumen, fijate a qué dispositivo sale el sonido. Un monitor por HDMI puede no tener parlantes.',
   probes: [

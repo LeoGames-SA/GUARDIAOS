@@ -124,6 +124,12 @@ export function CallPanel({
   const name = cs.contactKnown ? def.contact.name : 'Número interno';
   const state: CallStateLabel = ended ? 'finalizada' : held ? 'en espera' : 'conversación';
 
+  // Al atender, el foco pasa a la conversación (Enter/Espacio completan la frase).
+  useEffect(() => {
+    if (!collapsed) panelRef.current?.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call.eventKey]);
+
   // Al completar, omitir, contraer o poner en espera, los murmullos se detienen.
   useEffect(() => {
     if (!typing || collapsed || held) sound.stopVoice();
@@ -198,6 +204,7 @@ export function CallPanel({
     <aside
       className={`call call-card state-${state.replace(' ', '-')}`}
       ref={panelRef}
+      tabIndex={-1}
       aria-label={`Llamada con ${name}`}
     >
       <header className="call-head">
@@ -294,13 +301,31 @@ export function CallPanel({
               {game.mode === 'campaign' && `Más de ${HOLD_PATIENCE} min de reloj la impacientan.`} Podés
               investigar mientras tanto.
             </p>
-            <button
-              type="button"
-              className="btn btn-sm btn-primary opt"
-              onClick={() => store.dispatch({ type: 'resume' })}
-            >
-              Retomar la llamada
-            </button>
+            <div className="row call-actions">
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={() => store.dispatch({ type: 'resume' })}
+              >
+                Retomar la llamada
+              </button>
+              <span className="row call-tools">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={(e) => onTool('board', e.currentTarget)}
+                >
+                  Pizarra
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={(e) => onTool('os', e.currentTarget)}
+                >
+                  GuardiaOS
+                </button>
+              </span>
+            </div>
           </div>
         ) : citing ? (
           <div className="call-options" role="group" aria-label="Elegí qué comprobación contar">

@@ -2771,3 +2771,21 @@ details > summary {
     width: 100%;
   }
 }
+.report-sec {
+  margin-top: 14px;
+}
+.report-sec h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--amber-2);
+  border-bottom: 1px solid #ffffff1a;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+.checklist li {
+  padding: 3px 0;
+}
+.call-card:focus {
+  outline: none;
+}

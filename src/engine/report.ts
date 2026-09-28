@@ -15,6 +15,10 @@ export interface CaseReport {
   explanation: string;
   playerHypothesis: string;
   hypothesisMatches: boolean | null;
+  /** Si el razonamiento quedó documentado (hipótesis de trabajo con notas conectadas). */
+  documented: boolean;
+  notesCount: number;
+  channel: 'phone' | 'email' | 'auto';
   found: string[];
   missing: string[];
   interventions: string[];
@@ -36,7 +40,7 @@ export function caseReport(content: Content, state: GameState, caseId: string): 
   const ran = new Set(cs.runs.map((r) => r.probeId));
   const trueHyp = typeof variant.world.hyp === 'string' ? variant.world.hyp : null;
   const hyp = cs.workingHyp ? def.hypotheses.find((h) => h.id === cs.workingHyp) : null;
-  let playerHypothesis = 'No se eligió una hipótesis de trabajo.';
+  let playerHypothesis = 'No registraste una hipótesis de trabajo en la pizarra.';
   if (hyp) {
     const r = readHypothesis(def, cs, hyp.id);
     playerHypothesis = `${hyp.label} (respaldo ${r.level})`;
@@ -52,6 +56,9 @@ export function caseReport(content: Content, state: GameState, caseId: string): 
     explanation: variant.explanation,
     playerHypothesis,
     hypothesisMatches: hyp && trueHyp ? hyp.id === trueHyp : null,
+    documented: Boolean(hyp) && cs.links.some((l) => l.hypId === hyp?.id),
+    notesCount: cs.notes.length,
+    channel: def.channel,
     found: variant.keyProbes.filter((p) => ran.has(p)).map((p) => probesById.get(p)?.label ?? p),
     missing: variant.keyProbes.filter((p) => !ran.has(p)).map((p) => probesById.get(p)?.label ?? p),
     interventions: cs.notes.filter((n) => n.kind === 'tried').map((n) => n.text),

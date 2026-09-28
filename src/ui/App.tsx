@@ -49,6 +49,7 @@ export function App() {
   const store = useMemo(() => new GameStore(), []);
   useEffect(() => {
     (window as unknown as { __tdg: GameStore }).__tdg = store;
+    (window as unknown as { __tdgSound: typeof sound }).__tdgSound = sound;
   }, [store]);
   return (
     <StoreContext.Provider value={store}>

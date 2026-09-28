@@ -107,6 +107,13 @@ export const case002: CaseDef = {
     { probe: 'i-remove-logistics', text: 'Retirar el acceso del puesto anterior, como indica la solicitud' },
     { probe: 't-requests', text: 'Verificar la autorización antes de cambiar permisos' },
   ],
+  farewell: {
+    nico: '',
+    warm: '',
+    costly: '',
+    cold: '',
+    mail: 'Tomás, confirmado: ya tenés acceso a la carpeta de Compras. Cierro el ticket; si algo falla, respondé este correo y lo retomo.',
+  },
   learned:
     'Permisos: si el servidor responde «acceso denegado», la red anda. Compará grupos de la cuenta con los permisos del recurso, buscá la autorización y renová la sesión después del alta.',
   probes: [

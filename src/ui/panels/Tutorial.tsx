@@ -53,6 +53,11 @@ export function tutorialStep(g: GameState, panel: PanelState | null): Step | nul
     return g.call
       ? { text: 'Preguntale si ahora lo escucha.', focus: null }
       : { text: 'Llamala por teléfono y preguntale si ahora escucha.', focus: 'phone' };
+  if (g.call && !g.call.ended)
+    return {
+      text: 'Confirmado. Despedite y cerrá el ticket: «Despedirse y cerrar el ticket», en la llamada.',
+      focus: null,
+    };
   return {
     text: 'Confirmado. Cerrá el ticket desde el Centro de tickets, en el monitor.',
     focus: os ? null : 'monitor',

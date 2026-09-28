@@ -17,6 +17,8 @@ class Sound {
   voiceVolume = 0.5;
   private lastVoice = 0;
   private voices = new Set<OscillatorNode>();
+  /** Diagnóstico para pruebas: sílabas pedidas, sonadas y cortes. */
+  stats = { requested: 0, played: 0, stops: 0 };
 
   /** Llamar desde un gesto del usuario. */
   unlock() {
@@ -107,10 +109,12 @@ class Sound {
    * con tono propio por personaje. Nunca una nota por letra.
    */
   voice(pitch: number, wave: OscillatorType = 'triangle') {
+    this.stats.requested++;
     if (!this.ctx || !this.master || !this.enabled || this.voiceVolume <= 0) return;
     const now = this.ctx.currentTime;
     if (now - this.lastVoice < 0.075) return;
     this.lastVoice = now;
+    this.stats.played++;
     const f = pitch * (0.88 + Math.random() * 0.26);
     const dur = 0.05 + Math.random() * 0.035;
     const o = this.ctx.createOscillator();
@@ -135,6 +139,7 @@ class Sound {
 
   /** Corta cualquier murmullo en curso (texto completado, omitido, silencio o espera). */
   stopVoice() {
+    this.stats.stops++;
     for (const o of this.voices) {
       try {
         o.stop();

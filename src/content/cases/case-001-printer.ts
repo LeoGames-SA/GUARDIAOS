@@ -151,6 +151,12 @@ export const case001: CaseDef = {
       variants: ['job'],
     },
   ],
+  farewell: {
+    nico: 'Buenísimo, Elena. Quedó funcionando; dejo anotado en el ticket lo que hice. Si vuelve a trabarse, llamá a soporte.',
+    warm: '¡Mil gracias, Nicolás! Llego justo con el cierre. Buena guardia.',
+    costly: 'Gracias… el cierre ya salió incompleto, pero al menos ahora imprime. Buenas noches.',
+    cold: 'Bueno. Gracias. Chau.',
+  },
   learned:
     'Impresión: compará alcance por nombre y por IP, mirá la cola y el estado del servicio antes de tocar nada. Reiniciar el servicio puede tapar un controlador defectuoso por unos segundos.',
   probes: [

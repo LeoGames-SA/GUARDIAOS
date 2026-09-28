@@ -944,6 +944,7 @@ function Site({ url, game }: { url: string; game: GameState }) {
 // ------------------------------------------------------------------ Historial
 
 export function HistoryApp({ game }: AppProps) {
+  const store = useStore();
   const [filter, setFilter] = useState<string>('all');
   const rows = game.history
     .filter((h) => filter === 'all' || h.caseId === filter || (filter === 'none' && h.caseId === null))
@@ -979,6 +980,9 @@ export function HistoryApp({ game }: AppProps) {
               <th>Acción</th>
               <th>Resultado</th>
               <th>Min</th>
+              <th>
+                <span className="sr-only">Informe</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -991,6 +995,19 @@ export function HistoryApp({ game }: AppProps) {
                 <td>{h.action}</td>
                 <td>{h.result}</td>
                 <td className="mono">{h.cost || ''}</td>
+                <td>
+                  {h.caseId &&
+                    game.cases[h.caseId]?.status === 'closed' &&
+                    (h.action.startsWith('Cerré') || h.action.startsWith('Escalar')) && (
+                      <button
+                        type="button"
+                        className="btn btn-sm"
+                        onClick={() => store.showReport(h.caseId!)}
+                      >
+                        Ver informe
+                      </button>
+                    )}
+                </td>
               </tr>
             ))}
           </tbody>
