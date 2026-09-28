@@ -59,3 +59,32 @@ export async function runProbe(scope: ReturnType<Page['locator']>, title: string
 export async function closePanel(page: Page) {
   await page.keyboard.press('Escape');
 }
+
+/** Nueva guardia con semilla por URL, saltando la práctica. */
+export async function startGuard(page: Page, seed: number) {
+  await page.goto(`/?semilla=${seed}`);
+  await page.getByRole('button', { name: 'Nueva guardia' }).click();
+  await page.getByRole('button', { name: 'Ir directo a la guardia' }).click();
+  await expect(page.locator('.hud-clock')).toContainText('23:00');
+}
+
+export async function answer(page: Page) {
+  await page.getByRole('button', { name: /Teléfono: está sonando/ }).click();
+  await expect(page.locator('aside.call')).toBeVisible();
+}
+
+export async function selectRow(scope: ReturnType<Page['locator']>, name: string | RegExp) {
+  await scope.getByRole('option', { name }).click();
+}
+
+export async function closeCase(page: Page, expected: string | RegExp) {
+  await openMonitor(page);
+  const tickets = await openApp(page, 'Centro de tickets');
+  await tickets.getByRole('button', { name: 'Cerrar como resuelto' }).click();
+  const report = page.getByRole('dialog', { name: 'Informe del expediente' });
+  await expect(report).toContainText(expected);
+  const text = await report.innerText();
+  await report.getByRole('button', { name: /Cerrar/ }).click();
+  await closePanel(page);
+  return text;
+}

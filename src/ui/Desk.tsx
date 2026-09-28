@@ -206,12 +206,12 @@ export function Desk() {
   const dual = app.profile.secondMonitor && !practice;
   const n = mood(game.needs);
   const inCall = Boolean(game.call);
-  const next = upcoming(game);
+  const next = upcoming(CONTENT, game);
   const settled = allSettled(game);
   const highlight = practice ? tutorialFocus(game, panel) : game.incoming ? 'phone' : null;
 
   return (
-    <div className="desk" data-practice={practice || undefined}>
+    <div className={`desk ${inCall ? 'in-call' : ''}`} data-practice={practice || undefined}>
       <div className="stage-wrap">
         <div className="ambient" style={{ backgroundImage: 'url(./assets/background.webp)' }} />
         <div className="stage">
@@ -296,11 +296,12 @@ export function Desk() {
               onClick={(e) => open({ kind: 'nico' }, e.currentTarget)}
             >
               <span className={`nico-dot ${n.split(' ')[0]}`} aria-hidden="true" />
-              Nico: {n}
+              <span className="nico-label">Nico: {n}</span>
+              <span className="sr-only nico-sr">Nico: {n}</span>
             </button>
             <button
               type="button"
-              className="btn btn-sm"
+              className="btn btn-sm hud-pause"
               onClick={(e) => open({ kind: 'pause' }, e.currentTarget)}
             >
               Pausa

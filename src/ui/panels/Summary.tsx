@@ -1,3 +1,4 @@
+import { Scene } from '../scene/Scene';
 import { useAppState, useStore } from '../../application/context';
 import { CONTENT } from '../../content';
 import { nightSummary, UNLOCK_RULE } from '../../engine/report';
@@ -11,11 +12,11 @@ export function Summary() {
   const s = nightSummary(CONTENT, game);
   return (
     <main className="summary">
-      <div
-        className="menu-bg"
-        style={{ backgroundImage: 'url(./assets/background.webp)' }}
-        aria-hidden="true"
-      />
+      <div className="menu-scene" aria-hidden="true" inert>
+        <div className="stage">
+          <Scene game={null} dual={false} pose={null} onOpen={() => undefined} inert />
+        </div>
+      </div>
       <div className="summary-card">
         <h1>Fin del turno · 07:00</h1>
         <p className="lead">

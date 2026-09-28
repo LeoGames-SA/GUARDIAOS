@@ -426,7 +426,7 @@ export function MailApp({ game }: AppProps) {
                   <p className="small muted">Tomá el expediente en el Centro de tickets para responder.</p>
                 )}
                 {replies.map((p) => (
-                  <MailReply key={p.id} game={game} cs={cs} def={def} probe={p} />
+                  <MailReply key={p.id} game={game} cs={cs} def={def} probe={p} onSent={() => setSel(null)} />
                 ))}
               </section>
             )}
@@ -444,11 +444,13 @@ function MailReply({
   cs,
   def,
   probe,
+  onSent,
 }: {
   game: GameState;
   cs: CaseState;
   def: CaseDef;
   probe: ProbeDef;
+  onSent: () => void;
 }) {
   const store = useStore();
   const blocked = probeBlockReason(game, def, cs, probe);
@@ -463,7 +465,10 @@ function MailReply({
         <button
           type="button"
           className="btn btn-sm"
-          onClick={() => store.dispatch({ type: 'probe', caseId: cs.id, probeId: probe.id })}
+          onClick={() => {
+            store.dispatch({ type: 'probe', caseId: cs.id, probeId: probe.id });
+            onSent(); // mostrar la respuesta recién llegada
+          }}
         >
           Enviar: {probe.label}{' '}
           <span className="cost">

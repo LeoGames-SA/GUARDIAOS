@@ -435,21 +435,26 @@ p {
   width: 52.6%;
   height: 39.5%;
   pointer-events: none;
+  overflow: hidden;
+  opacity: 0.55;
+}
+/* Sólo transform: el compositor mueve la capa sin repintar la escena. */
+.rain::before {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: -100%;
+  height: 200%;
   background-image:
-    repeating-linear-gradient(104deg, transparent 0 22px, #cfe6ff22 22px 23px, transparent 23px 47px),
-    repeating-linear-gradient(100deg, transparent 0 35px, #cfe6ff18 35px 36px, transparent 36px 71px);
-  background-size:
-    120px 180px,
-    160px 240px;
-  animation: rain 0.7s linear infinite;
-  mix-blend-mode: screen;
-  opacity: 0.8;
+    repeating-linear-gradient(104deg, transparent 0 22px, #cfe6ff30 22px 23px, transparent 23px 47px),
+    repeating-linear-gradient(100deg, transparent 0 35px, #cfe6ff22 35px 36px, transparent 36px 71px);
+  animation: rain 0.9s linear infinite;
+  will-change: transform;
 }
 @keyframes rain {
   to {
-    background-position:
-      -40px 180px,
-      -40px 240px;
+    transform: translate3d(-4%, 50%, 0);
   }
 }
 .lamp-glow {
@@ -493,19 +498,19 @@ p {
   left: 39%;
   top: -18%;
 }
-[data-hidden-tab] .rain,
+[data-hidden-tab] .rain::before,
 [data-hidden-tab] .steam path,
 [data-hidden-tab] .handset.wiggle {
   animation-play-state: paused;
 }
-:root[data-motion='reduced'] .rain,
+:root[data-motion='reduced'] .rain::before,
 :root[data-motion='reduced'] .steam,
 :root[data-motion='reduced'] .handset.wiggle,
 :root[data-motion='reduced'] .phone-led.on {
   animation: none;
 }
 :root[data-motion='reduced'] .rain {
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 /* ------------------------------------------------------------ HUD */
@@ -881,6 +886,18 @@ details > summary {
   overflow: auto;
   padding: 16px;
 }
+.menu-scene {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #071016;
+  filter: brightness(0.5) saturate(1.05);
+  pointer-events: none;
+}
+.menu-scene .stage {
+  width: max(100vw, calc(100vh * 1672 / 941));
+}
 .menu-bg {
   position: fixed;
   inset: 0;
@@ -1094,10 +1111,10 @@ details > summary {
   margin: 0;
   padding: 8px;
   display: grid;
-  grid-template-rows: repeat(auto-fill, 44px);
+  grid-template-rows: repeat(auto-fill, 38px);
   grid-auto-flow: column;
   grid-auto-columns: 122px;
-  gap: 2px 4px;
+  gap: 1px 4px;
   height: 100%;
   width: max-content;
 }
@@ -1106,8 +1123,8 @@ details > summary {
   align-items: center;
   gap: 8px;
   width: 118px;
-  min-height: 40px;
-  padding: 4px 6px;
+  min-height: 37px;
+  padding: 2px 6px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -2188,8 +2205,19 @@ details > summary {
   filter: drop-shadow(0 0 0.8cqw #ffcf70) drop-shadow(0 0.35cqw 0.45cqw #000a) brightness(1.1);
 }
 
+/* Con llamada activa, la escena se corre para quedar entera a la derecha del panel. */
+.desk.in-call .stage-wrap {
+  left: min(360px, 34vw);
+}
+.desk.in-call .stage {
+  width: min(calc(100vw - min(360px, 34vw)), calc((100vh - var(--hud-h)) * 1672 / 941));
+}
+
 /* ------------------------------------------------------------ navegación móvil */
 .mobile-nav {
+  display: none;
+}
+.nico-sr {
   display: none;
 }
 .hud .muted.small {
@@ -2222,13 +2250,24 @@ details > summary {
   .hud-clock small {
     display: none;
   }
+  :root {
+    --stage-h: min(38vh, calc(100vw * 941 / 1672));
+  }
   .stage-wrap {
     bottom: auto;
-    height: 38vh;
+    height: var(--stage-h);
     place-items: start center;
   }
   .stage {
-    width: min(100vw, calc(38vh * 1672 / 941));
+    width: min(100vw, calc(var(--stage-h) * 1672 / 941));
+  }
+  .ring-badge,
+  .hud-pause,
+  .nico-label {
+    display: none;
+  }
+  .nico-sr {
+    display: inline;
   }
   .ambient {
     display: none;
@@ -2240,7 +2279,7 @@ details > summary {
     position: fixed;
     left: 0;
     right: 0;
-    top: calc(var(--hud-h) + 38vh);
+    top: calc(var(--hud-h) + var(--stage-h));
     bottom: 0;
     z-index: 150;
     display: grid;
@@ -2260,6 +2299,16 @@ details > summary {
     font-size: 1.05rem;
     font-weight: 700;
   }
+  .desk.in-call .stage-wrap {
+    left: 0;
+  }
+  .desk.in-call .stage {
+    width: min(100vw, calc(var(--stage-h) * 1672 / 941));
+  }
+  .desk.in-call .mobile-nav {
+    top: calc(var(--hud-h) + 60vh);
+    grid-auto-rows: minmax(52px, auto);
+  }
   .mobile-nav button.ringing {
     background: #5a1d12;
     border-color: #ff8a6a;
@@ -2270,7 +2319,7 @@ details > summary {
   }
   .overlay.with-call {
     left: 0;
-    top: calc(var(--hud-h) + 45vh);
+    top: var(--hud-h);
   }
   .panel {
     margin: 0;
@@ -2287,7 +2336,7 @@ details > summary {
   .call {
     width: 100%;
     bottom: auto;
-    height: 45vh;
+    height: 60vh;
     border-right: 0;
     border-bottom: 1px solid #3c6878;
   }
@@ -2347,4 +2396,9 @@ details > summary {
   .tutorial {
     bottom: 8px;
   }
+}
+.btn-primary[disabled] {
+  background: #3a4448;
+  color: #a9b4b6;
+  border-color: #56656a;
 }

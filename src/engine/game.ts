@@ -575,7 +575,7 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       return { state, events };
     }
     case 'wait': {
-      const next = state.events.filter((e) => !e.done && e.at > state.minute).sort((a, b) => a.at - b.at)[0];
+      const next = upcoming(content, state);
       if (!next) return blocked('No hay eventos programados.');
       history(state, null, 'Turno', 'Nico', 'Esperar al próximo evento', '', next.at - state.minute);
       advance(content, state, next.at - state.minute, events);
@@ -815,8 +815,17 @@ function appLabel(app: string): string {
 }
 
 /** ¿Queda algo por llegar esta noche? */
-export function upcoming(state: GameState): ScheduledEvent | undefined {
-  return state.events.filter((e) => !e.done && e.at > state.minute).sort((a, b) => a.at - b.at)[0];
+/** Próximo evento que puede cambiar algo (se omiten seguimientos y plazos de casos ya resueltos). */
+export function upcoming(content: Content, state: GameState): ScheduledEvent | undefined {
+  return state.events
+    .filter((e) => {
+      if (e.done || e.at <= state.minute) return false;
+      if (e.kind === 'arrival' || e.kind === 'end' || !e.caseId) return true;
+      const cs = state.cases[e.caseId];
+      if (!cs || cs.status === 'closed') return false;
+      return e.kind === 'world' || !isSettled(getCaseDef(content, cs.id), cs);
+    })
+    .sort((a, b) => a.at - b.at)[0];
 }
 
 export function allSettled(state: GameState): boolean {

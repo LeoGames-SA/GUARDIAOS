@@ -1,3 +1,4 @@
+import { Scene } from '../scene/Scene';
 import { useState } from 'react';
 import { useAppState, useStore } from '../../application/context';
 import { Panel } from '../common/Panel';
@@ -29,11 +30,11 @@ export function Menu() {
 
   return (
     <main className="menu">
-      <div
-        className="menu-bg"
-        style={{ backgroundImage: 'url(./assets/background.webp)' }}
-        aria-hidden="true"
-      />
+      <div className="menu-scene" aria-hidden="true" inert>
+        <div className="stage">
+          <Scene game={null} dual={false} pose={null} onOpen={() => undefined} inert />
+        </div>
+      </div>
       <div className="menu-card">
         <h1>
           Turno de Guardia

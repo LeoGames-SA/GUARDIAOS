@@ -181,6 +181,16 @@ describe('reloj compartido y eventos', () => {
     expect(restored.cases.c002!.messages.length).toBe(1);
   });
 
+  it('esperar salta los seguimientos y plazos de casos ya resueltos', () => {
+    let s = answered(QA_SEEDS.job);
+    s = run(s, p1('t-queue'), p1('i-cancel-job'), p1('v-retry'), { type: 'close', caseId: 'c001' }).state;
+    s = run(s, { type: 'wait' }).state; // 23:20: llega 002
+    s = run(s, { type: 'take', caseId: 'c002' }).state;
+    s = run(s, { type: 'escalate', caseId: 'c002' }).state;
+    s = run(s, { type: 'wait' }).state;
+    expect(s.minute).toBe(120); // 01:00, sin frenar en 23:40, 00:15, 00:30 ni 02:00
+  });
+
   it('una llamada no atendida en 10 minutos queda perdida con contestador', () => {
     const s = newNight(QA_SEEDS.driver);
     const r = run(s, { type: 'pause', kind: 'air' });
