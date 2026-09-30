@@ -305,6 +305,8 @@ test('la llamada no mueve la mesa: atender, contraer, espera, retomar y cortar',
   await page.locator('.call-pill').getByRole('button', { name: 'Retomar' }).click();
   await page.locator('.call-pill').getByRole('button', { name: 'Ver conversación' }).click();
   await expect(call).toContainText('Gracias por esperar');
+  await expect(call).not.toContainText('Mesa de ayuda'); // se destaca lo actual, historial plegado
+  await call.getByRole('button', { name: /Historial/ }).click();
   await expect(call).toContainText('Mesa de ayuda'); // el diálogo continúa, no se reinicia
   await call.getByRole('button', { name: 'Cortar', exact: true }).click();
   await expect(call).toHaveCount(0);
@@ -401,4 +403,33 @@ test('ventanas dentro del área útil, recordadas al recargar y corregidas al ac
     }),
   );
   expect(controlsVisible).toBe(true);
+});
+
+test('ticket impreso: hoja de solicitud con lo que traía el pedido; el equipo se anota al conocerse', async ({
+  page,
+}) => {
+  await fresh(page);
+  await startGuard(page, 7);
+  await page.getByRole('button', { name: /Teléfono: está sonando/ }).click();
+  await page.getByRole('button', { name: /Ticket del expediente/ }).click();
+  const sheet = page.getByRole('article', { name: 'Solicitud de soporte 001' });
+  await expect(sheet).toContainText('Impresión detenida');
+  await expect(sheet).toContainText('Elena Suárez');
+  await expect(sheet).toContainText('Administración');
+  await expect(sheet).toContainText('00:30');
+  await expect(sheet.getByLabel('sin completar')).toHaveCount(1); // equipo afectado todavía no
+  await expect(sheet).not.toContainText('PC-ADM-07');
+  await expect(sheet).not.toContainText(/controlador|UniPrint|cola trabada/i); // sin causa ni solución
+  // El texto es real y seleccionable.
+  expect(await sheet.evaluate((el) => getComputedStyle(el).userSelect)).not.toBe('none');
+  await page.keyboard.press('Escape');
+  await page.evaluate(() =>
+    (window as unknown as { __tdg: { dispatch: (a: unknown) => void } }).__tdg.dispatch({
+      type: 'probe',
+      caseId: 'c001',
+      probeId: 't-resolve',
+    }),
+  );
+  await page.getByRole('button', { name: /Ticket del expediente/ }).click();
+  await expect(sheet.locator('.sheet-hand')).toHaveText('PC-ADM-07');
 });

@@ -1,7 +1,7 @@
 import { CONTENT } from '../../content';
-import { artInfo } from '../../content/station';
 import { clock } from '../../engine/time';
-import type { GameState } from '../../engine/types';
+import type { CaseDef, CaseState, GameState } from '../../engine/types';
+import { CHANNEL, deviceKnown, priority } from '../common/ticket';
 import { Panel } from '../common/Panel';
 import { ProbeCard } from '../common/ProbeCard';
 
@@ -19,31 +19,8 @@ export function DocPanel({
   const def = cs ? CONTENT.cases[cs.id]! : null;
   if (doc === 'ticket') {
     return (
-      <Panel title="Ticket impreso" onClose={onClose} style={{ width: 'min(560px,100%)' }}>
-        <div className="panel-body">
-          <div
-            className="paper-doc ticket-doc"
-            style={{ backgroundImage: `url(${artInfo('ticket-paper').file})` }}
-          >
-            {def && cs ? (
-              <>
-                <h3>TICKET #{def.number}</h3>
-                <p>
-                  <b>{def.title}</b>
-                </p>
-                <p>{cs.contactKnown || def.channel !== 'phone' ? def.summary : def.teaser}</p>
-                <p className="small">
-                  Solicitante:{' '}
-                  {cs.contactKnown ? `${def.contact.name} (${def.contact.role})` : 'sin identificar'} ·
-                  Llegada {game.mode === 'practice' ? '—' : clock(cs.arrivedAt ?? 0)}
-                  {def.deadline !== null && game.mode === 'campaign' ? ` · Plazo ${clock(def.deadline)}` : ''}
-                </p>
-              </>
-            ) : (
-              <p>No hay un expediente activo. El ticket del próximo caso se imprime al tomarlo.</p>
-            )}
-          </div>
-        </div>
+      <Panel title="Ticket impreso" onClose={onClose} className="panel-doc">
+        {def && cs ? <TicketSheet game={game} cs={cs} def={def} /> : <EmptySheet />}
       </Panel>
     );
   }
@@ -67,5 +44,89 @@ export function DocPanel({
         )}
       </div>
     </Panel>
+  );
+}
+
+/**
+ * Hoja de solicitud impresa al recibir el pedido: sólo lo que traía la solicitud original.
+ * Lo que Nico averigua después se anota a mano (equipo afectado); el estado vivo, las notas y
+ * el historial se consultan en GuardiaOS › Centro de tickets.
+ */
+function TicketSheet({ game, cs, def }: { game: GameState; cs: CaseState; def: CaseDef }) {
+  const practice = game.mode === 'practice';
+  const known = cs.contactKnown || def.channel !== 'phone';
+  const blank = <span className="sheet-blank" aria-label="sin completar" />;
+  return (
+    <article className="sheet" aria-label={`Solicitud de soporte ${def.number}`}>
+      <header className="sheet-head">
+        <div className="sheet-org">
+          <b>Mutual Sur</b> · Mesa de ayuda
+          <small>Solicitud de soporte{practice ? ' · práctica' : ''}</small>
+        </div>
+        <div className="sheet-num">
+          <small>N.º</small>
+          {def.number}
+        </div>
+      </header>
+      <h3 className="sheet-subject">{def.title}</h3>
+      <dl className="sheet-grid">
+        <div>
+          <dt>Estado al imprimir</dt>
+          <dd>Nuevo</dd>
+        </div>
+        <div>
+          <dt>Prioridad</dt>
+          <dd>{practice ? '—' : priority(def)}</dd>
+        </div>
+        <div>
+          <dt>Canal</dt>
+          <dd>{CHANNEL[def.channel].replace(/^\S+\s/, '')}</dd>
+        </div>
+        <div>
+          <dt>Solicitante</dt>
+          <dd>{cs.contactKnown ? def.contact.name : def.channel === 'auto' ? def.contact.name : blank}</dd>
+        </div>
+        <div>
+          <dt>Sector</dt>
+          <dd>{cs.contactKnown || def.channel === 'auto' ? def.contact.role : blank}</dd>
+        </div>
+        <div>
+          <dt>Equipo afectado</dt>
+          <dd>
+            {deviceKnown(def, cs) ? (
+              <span className="sheet-hand" title="Anotado a mano">
+                {def.contact.device}
+              </span>
+            ) : (
+              blank
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Llegada</dt>
+          <dd>{practice || cs.arrivedAt === null ? '—' : clock(cs.arrivedAt)}</dd>
+        </div>
+        <div>
+          <dt>Plazo</dt>
+          <dd>{def.deadline === null || practice ? 'Sin plazo' : clock(def.deadline)}</dd>
+        </div>
+      </dl>
+      <section className="sheet-desc">
+        <h4>Descripción del problema, como se reportó</h4>
+        <p>{known ? def.summary : def.teaser}</p>
+      </section>
+      <footer className="sheet-foot">
+        Copia impresa al recibir la solicitud. Estado actualizado, notas e historial: GuardiaOS › Centro de
+        tickets.
+      </footer>
+    </article>
+  );
+}
+
+function EmptySheet() {
+  return (
+    <article className="sheet sheet-empty" aria-label="Sin solicitud impresa">
+      <p>No hay un expediente activo. La hoja del próximo caso se imprime al tomarlo.</p>
+    </article>
   );
 }

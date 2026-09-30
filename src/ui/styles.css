@@ -654,7 +654,11 @@ p {
   bottom: 64px;
 }
 .overlay.with-call {
-  left: calc(var(--sl) + min(414px, 40vw));
+  left: calc(var(--sl) + min(384px, 40vw));
+}
+/* Llamada contraída arriba a la izquierda: los paneles empiezan debajo de ella. */
+.overlay.with-toppill {
+  top: calc(var(--hud-h) + var(--sb) + 64px);
 }
 .scrim {
   position: fixed;
@@ -1142,7 +1146,7 @@ details > summary {
   }
 }
 .call-card {
-  width: min(390px, calc(100vw - 24px));
+  width: min(360px, calc(100vw - 24px));
   /* Arriba a la izquierda del escenario y sin bajar hasta el teléfono: la mano con el
      auricular (y el aparato) quedan a la vista durante la conversación. */
   top: calc(var(--hud-h) + var(--sb) + 12px);
@@ -1181,6 +1185,55 @@ details > summary {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Llamada contraída (en espera o a pedido): tarjeta compacta donde estaba la conversación. */
+.call-mini {
+  top: calc(var(--hud-h) + var(--sb) + 12px);
+  bottom: auto;
+  flex-wrap: wrap;
+  max-width: min(480px, calc(100vw - 24px));
+}
+.call-mini .pill-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pill-help-btn {
+  min-width: 30px;
+  padding: 2px 8px;
+  border-radius: 50%;
+}
+.pill-help {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+/* Intervención actual destacada; las anteriores quedan atenuadas y el historial se amplía a pedido. */
+.line-past {
+  opacity: 0.62;
+}
+.line-past .said {
+  font-size: 0.9rem;
+  padding: 5px 10px;
+}
+.line-current .said {
+  font-size: 1.02rem;
+  box-shadow: inset 3px 0 0 var(--amber);
+}
+.line-nico.line-current .said {
+  box-shadow: inset -3px 0 0 var(--amber);
+}
+.call-history-toggle {
+  align-self: flex-start;
+  margin: 6px 0 0 10px;
+  font-size: 0.8rem;
+  min-height: 26px;
+  padding: 2px 8px;
+}
+.call-log-wrap .call-log {
+  max-height: min(20vh, 200px);
+}
+.call-log-wrap.with-history .call-log {
+  max-height: min(42vh, 380px);
 }
 .state-entrante {
   border-color: #ff8a6a;
@@ -2722,9 +2775,15 @@ details > summary {
   .scrim {
     inset: var(--hud-h) 0 0 0;
   }
-  .overlay.with-call {
+  .overlay.with-call,
+  .overlay.with-toppill {
     left: 0;
     top: var(--hud-h);
+  }
+  .call-mini {
+    top: auto;
+    bottom: 8px;
+    max-width: none;
   }
   .panel {
     margin: 0;
@@ -3639,4 +3698,161 @@ details > summary {
   text-align: center;
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+/* ------------------------------------------------------------ Hoja de solicitud impresa */
+/* El documento es el protagonista: el marco de interfaz se reduce a un cierre discreto. */
+.panel.panel-doc {
+  width: min(640px, 100%);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+.panel-doc .panel-head {
+  background: transparent;
+  border: 0;
+  padding: 0 0 6px;
+  min-height: 0;
+}
+.panel-doc .panel-head h2 {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sheet {
+  position: relative;
+  color: #1f2327;
+  /* Papel de oficina: blanco cálido con fibra muy suave y un pliegue horizontal leve. */
+  background:
+    linear-gradient(180deg, transparent 49.6%, #0000000d 50%, #ffffff66 50.4%, transparent 51%),
+    radial-gradient(120% 90% at 20% 0%, #ffffff 0%, transparent 60%),
+    repeating-linear-gradient(0deg, #00000005 0 1px, transparent 1px 3px), #f3f1ea;
+  padding: 26px 32px 22px;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 #ffffff inset,
+    0 18px 40px #000b,
+    0 2px 6px #0006;
+  font-size: 1rem;
+  line-height: 1.45;
+  max-height: calc(100vh - var(--hud-h) - 80px);
+  overflow: auto;
+  user-select: text;
+}
+.sheet::before {
+  /* Esquina levemente gastada, sin muescas ni aspecto de cupón. */
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, transparent 50%, #0000000f 50%);
+  pointer-events: none;
+}
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 2px solid #1f2327;
+  padding-bottom: 8px;
+}
+.sheet-org {
+  font-size: 0.9rem;
+}
+.sheet-org small {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #555b60;
+}
+.sheet-num {
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+}
+.sheet-num small {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #555b60;
+}
+.sheet-subject {
+  margin: 12px 0 10px;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+.sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 18px;
+  margin: 0 0 14px;
+  padding: 10px 0;
+  border-top: 1px solid #c9c4b6;
+  border-bottom: 1px solid #c9c4b6;
+}
+.sheet-grid dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5b6166;
+}
+.sheet-grid dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+.sheet-blank {
+  display: inline-block;
+  width: 88%;
+  height: 1.1em;
+  border-bottom: 1px dotted #7a7f84;
+  vertical-align: bottom;
+}
+.sheet-hand {
+  /* Anotado a mano por Nico: tinta azul. */
+  font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+  color: #1d3f8f;
+  font-size: 1.05rem;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+.sheet-desc h4 {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5b6166;
+}
+.sheet-desc p {
+  margin: 0;
+  font-size: 1.02rem;
+}
+.sheet-foot {
+  margin-top: 16px;
+  font-size: 0.78rem;
+  color: #62686d;
+  border-top: 1px dashed #b9b4a6;
+  padding-top: 6px;
+}
+.sheet-empty p {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .panel.panel-doc {
+    width: calc(100% - 20px);
+    margin: 8px auto;
+  }
+  .sheet {
+    padding: 18px 16px 16px;
+  }
+  .sheet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

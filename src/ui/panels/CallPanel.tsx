@@ -15,6 +15,15 @@ export function markCallStart(key: string) {
   revealed.set(key, 0);
 }
 
+const HELP_KEY = 'tdg.ayuda.espera';
+function readHelpSeen(): boolean {
+  try {
+    return localStorage.getItem(HELP_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 /** Tono de voz estilizado por personaje (Hz). */
 const VOICE: Record<string, number> = { nico: 135, p001: 300, c001: 245 };
 
@@ -118,6 +127,10 @@ export function CallPanel({
   const [citing, setCiting] = useState(false);
   const [soothing, setSoothing] = useState(false);
   const [pinned, setPinned] = useState(true);
+  /** Historial ampliado: por defecto se ve la intervención actual y la anterior. */
+  const [history, setHistory] = useState(false);
+  const [holdHelp, setHoldHelp] = useState(false);
+  const helpSeen = useRef(readHelpSeen());
   const [unseen, setUnseen] = useState(0);
   const logRef = useRef<HTMLOListElement>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -146,6 +159,37 @@ export function CallPanel({
     else if (visible > prevVisible.current) setUnseen((u) => u + (visible - prevVisible.current));
     prevVisible.current = visible;
   }, [visible, chars, pinned]);
+
+  // En espera: se muestran la frase de Nico y la respuesta; luego la llamada se contrae a una
+  // tarjeta compacta (una vez por espera; si se vuelve a abrir, no se cierra sola).
+  const autoCollapsed = useRef<string | null>(null);
+  const toggleRef = useRef(onToggle);
+  useEffect(() => {
+    toggleRef.current = onToggle;
+  });
+  const holdKey = held ? `${call.eventKey}:${call.heldSince ?? ''}` : null;
+  useEffect(() => {
+    if (!holdKey || typing || collapsed || autoCollapsed.current === holdKey) return;
+    const t = window.setTimeout(() => {
+      autoCollapsed.current = holdKey;
+      toggleRef.current();
+    }, 2400);
+    return () => window.clearTimeout(t);
+  }, [holdKey, typing, collapsed]);
+  // La explicación de la paciencia se muestra completa la primera vez; después, con «?».
+  const [firstHelpKey, setFirstHelpKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (!holdKey) return setHoldHelp(false);
+    if (helpSeen.current) return;
+    helpSeen.current = true;
+    setFirstHelpKey(holdKey);
+    try {
+      localStorage.setItem(HELP_KEY, '1');
+    } catch {
+      /* sin almacenamiento */
+    }
+  }, [holdKey]);
+  const firstHoldHelp = holdKey !== null && firstHelpKey === holdKey;
 
   // Despedida dicha: al terminar de mostrarla, se cuelga solo (también hay botón).
   useEffect(() => {
@@ -182,20 +226,44 @@ export function CallPanel({
 
   if (collapsed) {
     return (
-      <aside className={`call call-pill state-${state.replace(' ', '-')}`} aria-label={`Llamada con ${name}`}>
+      <aside
+        className={`call call-pill call-mini state-${state.replace(' ', '-')}`}
+        aria-label={`Llamada con ${name}`}
+      >
         <span className="call-led" aria-hidden="true" />
         <span className="pill-text">
           <b>{cs.contactKnown ? def.contact.short : name}</b> · {state}
           {held && game.mode === 'campaign' && ` · ${waited} min`}
         </span>
         {held && (
-          <button type="button" className="btn btn-sm" onClick={() => store.dispatch({ type: 'resume' })}>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={() => store.dispatch({ type: 'resume' })}
+          >
             Retomar
           </button>
         )}
         <button type="button" className="btn btn-sm call-expand" onClick={onToggle} aria-expanded="false">
           Ver conversación
         </button>
+        {held && game.mode === 'campaign' && (
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost pill-help-btn"
+            aria-expanded={holdHelp}
+            aria-label="Ayuda sobre la espera"
+            onClick={() => setHoldHelp((h) => !h)}
+          >
+            ?
+          </button>
+        )}
+        {held && holdHelp && (
+          <p className="pill-help small" role="note">
+            Esperando desde las {clock(call.heldSince ?? game.minute)}. Más de {HOLD_PATIENCE} min de reloj la
+            impacientan; mientras tanto podés investigar.
+          </p>
+        )}
       </aside>
     );
   }
@@ -228,7 +296,20 @@ export function CallPanel({
           ▾
         </button>
       </header>
-      <div className="call-log-wrap">
+      <div className={`call-log-wrap ${history ? 'with-history' : ''}`}>
+        {visible > 2 && (
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost call-history-toggle"
+            aria-expanded={history}
+            onClick={() => {
+              setHistory((h) => !h);
+              setPinned(true);
+            }}
+          >
+            {history ? 'Ocultar historial' : `Historial (${visible - 2} anteriores)`}
+          </button>
+        )}
         <ol
           className="call-log"
           ref={logRef}
@@ -245,10 +326,13 @@ export function CallPanel({
           {call.lines.slice(0, visible).map((l, i) => {
             const isCurrent = i === shown;
             const text = isCurrent && chars !== Infinity ? l.text.slice(0, chars) : l.text;
+            // La intervención actual se destaca; sin historial ampliado se ven sólo las dos últimas.
+            const latest = i === visible - 1;
+            if (!history && i < visible - 2) return null;
             return (
               <li
                 key={i}
-                className={`line line-${l.speaker}`}
+                className={`line line-${l.speaker} ${latest ? 'line-current' : 'line-past'}`}
                 aria-hidden={isCurrent && chars !== Infinity ? true : undefined}
               >
                 <span className="who">
@@ -295,11 +379,21 @@ export function CallPanel({
           <div className="call-options" role="group" aria-label="Llamada en espera">
             <p className="small">
               {cs.contactKnown ? def.contact.short : 'La persona'} espera en línea
-              {game.mode === 'campaign'
-                ? ` desde las ${clock(call.heldSince ?? game.minute)} (${waited} min).`
-                : '.'}{' '}
-              {game.mode === 'campaign' && `Más de ${HOLD_PATIENCE} min de reloj la impacientan.`} Podés
-              investigar mientras tanto.
+              {game.mode === 'campaign' ? ` · ${waited} min` : ''}.
+              {game.mode === 'campaign' && (firstHoldHelp || holdHelp) && (
+                <> Más de {HOLD_PATIENCE} min de reloj la impacientan; podés investigar mientras tanto.</>
+              )}
+              {game.mode === 'campaign' && !firstHoldHelp && !holdHelp && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost pill-help-btn"
+                  aria-label="Ayuda sobre la espera"
+                  aria-expanded={false}
+                  onClick={() => setHoldHelp(true)}
+                >
+                  ?
+                </button>
+              )}
             </p>
             <div className="row call-actions">
               <button

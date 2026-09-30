@@ -48,22 +48,43 @@ test('espera, investigación, recarga, retomar, verificación, despedida y luego
   await page.getByRole('button', { name: /Teléfono: está sonando/ }).click();
   const call = page.locator('aside.call');
   await call.getByRole('button', { name: 'Poner en espera' }).click();
-  await expect(call).toContainText('En espera');
-  // Investigar en GuardiaOS con la llamada en espera.
-  await call.getByRole('button', { name: 'GuardiaOS' }).click();
+  // Primero se ven la frase de Nico y la respuesta; después se contrae a una tarjeta compacta.
+  await expect(call).toContainText('te pongo un momento en espera');
+  await expect(call).toContainText('Dale, espero');
+  const mini = page.locator('aside.call-mini');
+  await expect(mini).toContainText('en espera', { timeout: 6000 });
+  await expect(mini.getByRole('button', { name: 'Retomar' })).toBeVisible();
+  // La explicación de la paciencia se consulta con «?», no se repite siempre.
+  await mini.getByRole('button', { name: 'Ayuda sobre la espera' }).click();
+  await expect(mini).toContainText('impacientan');
+  // Investigar en GuardiaOS (desde la mesa) con la llamada en espera.
+  await openMonitor(page);
   const pr = await openApp(page, 'Impresoras');
   await runProbe(pr, 'Consultar la cola de IMP-ADM-02');
   await runProbe(pr, 'Cancelar el trabajo que encabeza la cola');
   await page.keyboard.press('Escape');
   // Recargar: la llamada sigue en espera, sin repetir el diálogo.
-  const lines = await call.locator('.line').count();
+  const lineCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __tdg: { game: { call: { lines: unknown[] } } } }).__tdg.game.call.lines
+          .length,
+    );
+  const lines = await lineCount();
   await page.reload();
   await page
     .getByRole('button', { name: /Continuar/ })
     .first()
     .click();
+  await expect(mini).toContainText('en espera', { timeout: 6000 });
+  expect(await lineCount()).toBe(lines);
+  // Ver la conversación no retoma la llamada.
+  await mini.getByRole('button', { name: 'Ver conversación' }).click();
   await expect(call).toContainText('En espera');
-  expect(await call.locator('.line').count()).toBe(lines);
+  await call.getByRole('button', { name: /Historial/ }).click();
+  await expect(call).toContainText('Mesa de ayuda');
+  await page.waitForTimeout(2800);
+  await expect(call).toContainText('En espera'); // no vuelve a contraerse sola ni se retoma
   await call.getByRole('button', { name: 'Retomar la llamada' }).click();
   await expect(call).toContainText('Gracias por esperar');
   await expect(call.getByRole('button', { name: /Qué mensaje/ })).toBeVisible(); // retoma donde estaba
@@ -92,4 +113,39 @@ test('espera, investigación, recarga, retomar, verificación, despedida y luego
   await expect(hist.getByRole('button', { name: 'Ver informe' })).toHaveCount(1);
   await hist.getByRole('button', { name: 'Ver informe' }).click();
   await expect(page.getByRole('dialog', { name: 'Informe del expediente' })).toContainText('#001');
+});
+
+test('la tarjeta del sándwich queda dentro de la pantalla, también con la llamada en espera', async ({
+  page,
+}) => {
+  for (const size of [
+    { width: 1366, height: 768 },
+    { width: 1920, height: 1080 },
+    { width: 3440, height: 1440 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(size);
+    await fresh(page);
+    await startGuard(page, 1);
+    const mobile = size.width < 700;
+    await (
+      mobile
+        ? page.locator('.mobile-nav').getByRole('button', { name: 'Atender' })
+        : page.getByRole('button', { name: /Teléfono: está sonando/ })
+    ).click();
+    await page.locator('aside.call').getByRole('button', { name: 'Poner en espera' }).click();
+    await expect(page.locator('aside.call-mini')).toBeVisible({ timeout: 6000 });
+    await (
+      mobile
+        ? page.locator('.mobile-nav').getByRole('button', { name: 'Sándwich' })
+        : page.getByRole('button', { name: /Sándwich/ })
+    ).click();
+    const card = page.getByRole('dialog', { name: 'Comer el sándwich' });
+    await expect(card).toContainText('Terminá la llamada');
+    const b = (await card.boundingBox())!;
+    expect(b.x).toBeGreaterThanOrEqual(0);
+    expect(b.y).toBeGreaterThanOrEqual(0);
+    expect(b.x + b.width).toBeLessThanOrEqual(size.width);
+    expect(b.y + b.height).toBeLessThanOrEqual(size.height);
+  }
 });

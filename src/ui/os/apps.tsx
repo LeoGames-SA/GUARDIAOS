@@ -7,6 +7,7 @@ import { probeBlockReason, probeCost, outcomeLabel } from '../../engine/game';
 import { clock } from '../../engine/time';
 import type { AppId, CaseDef, CaseState, GameState, ProbeDef } from '../../engine/types';
 import { ProbeCard } from '../common/ProbeCard';
+import { CHANNEL, priority } from '../common/ticket';
 import { MailApp } from './mail';
 import { BrowserApp } from './browser';
 import { wm } from './windows';
@@ -148,16 +149,6 @@ function probesFor(def: CaseDef | null, app: AppId, target?: string): ProbeDef[]
   if (!def) return [];
   return def.probes.filter((p) => p.app === app && (target === undefined || p.target === target));
 }
-
-function priority(def: CaseDef): 'Alta' | 'Media' {
-  return def.deadline !== null && def.deadline - def.arrival <= 120 ? 'Alta' : 'Media';
-}
-
-const CHANNEL: Record<CaseDef['channel'], string> = {
-  phone: '☎ Teléfono',
-  email: '✉ Correo',
-  auto: '⚠ Automático',
-};
 
 // ------------------------------------------------------------------ Centro de tickets
 

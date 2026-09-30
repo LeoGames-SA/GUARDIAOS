@@ -465,7 +465,7 @@ export function Desk() {
       {panel && <div className="scrim" onClick={close} />}
       {panel && (
         <div
-          className={`overlay ${inCall && !callCollapsed ? 'with-call' : ''} ${(inCall && callCollapsed) || (!inCall && game.incoming) ? 'with-pill' : ''}`}
+          className={`overlay ${inCall && !callCollapsed ? 'with-call' : ''} ${inCall && callCollapsed ? 'with-toppill' : ''} ${!inCall && game.incoming ? 'with-pill' : ''}`}
         >
           {panel.kind === 'os' && <GuardiaOS game={game} onClose={close} dual={dual} />}
           {panel.kind === 'second' && <SecondScreen game={game} onClose={close} />}
