@@ -40,6 +40,15 @@ export function CubePanel({ onClose, from }: { onClose: () => void; from?: DOMRe
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [gesture, setGesture] = useState<'layer' | 'object' | null>(null);
   const [help, setHelp] = useState(false);
+  const [mixing, setMixing] = useState<{ done: number; total: number } | null>(null);
+  const [flash, setFlash] = useState(false);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const solved = isSolved(cube.state);
 
   useEffect(() => {
@@ -54,6 +63,7 @@ export function CubePanel({ onClose, from }: { onClose: () => void; from?: DOMRe
           onMove: (m) => store.cubeMove(m),
           onGesture: setGesture,
         });
+        (window as unknown as { __tdgCube?: CubeView }).__tdgCube = viewRef.current;
         setStatus('ready');
       })
       .catch(() => !cancelled && setStatus('failed'));
@@ -61,17 +71,42 @@ export function CubePanel({ onClose, from }: { onClose: () => void; from?: DOMRe
       cancelled = true;
       viewRef.current?.dispose();
       viewRef.current = null;
+      delete (window as unknown as { __tdgCube?: CubeView }).__tdgCube;
     };
   }, [store]);
 
   useEffect(() => viewRef.current?.setState(cube.state), [cube.state]);
 
+  /** Mezclar: giros legales animados uno tras otro; sin gestos ni teclas mientras tanto. */
+  const mix = async () => {
+    const v = viewRef.current;
+    if (mixing || v?.busy()) return;
+    const seq = store.cubeScrambleMoves(20);
+    const reduced = document.documentElement.dataset.motion === 'reduced';
+    if (!v || reduced) {
+      for (const m of seq) store.cubeScrambleStep(m);
+      setFlash(true);
+      window.setTimeout(() => alive.current && setFlash(false), 260);
+      return;
+    }
+    setMixing({ done: 0, total: seq.length });
+    for (let i = 0; i < seq.length; i++) {
+      await v.turn(seq[i]!, false, 110);
+      if (!alive.current || viewRef.current !== v) return; // cerrado a mitad: queda el último giro completo
+      store.cubeScrambleStep(seq[i]!);
+      setMixing({ done: i + 1, total: seq.length });
+    }
+    setMixing(null);
+  };
+
   const turn = (m: Move) => {
+    if (mixing) return;
     const v = viewRef.current;
     if (!v) return store.cubeMove(m);
     if (!v.busy()) void v.turn(m);
   };
   const undo = () => {
+    if (mixing) return;
     const last = cube.history.at(-1);
     const v = viewRef.current;
     if (!last) return;
@@ -108,7 +143,8 @@ export function CubePanel({ onClose, from }: { onClose: () => void; from?: DOMRe
       {(back) => (
         <>
           <div
-            className={`cube-stage ${gesture ? `g-${gesture}` : ''}`}
+            className={`cube-stage ${gesture ? `g-${gesture}` : ''} ${flash ? 'cube-flash' : ''} ${mixing ? 'mixing' : ''}`}
+            aria-busy={mixing ? true : undefined}
             tabIndex={0}
             role="application"
             aria-label={`Cubo 3×3. ${solved ? 'Resuelto' : 'Sin resolver'}, ${cube.moves} movimientos. Letras U R F D L B M E S giran capas, Mayúscula al revés, flechas giran el cubo.`}
@@ -135,17 +171,33 @@ export function CubePanel({ onClose, from }: { onClose: () => void; from?: DOMRe
           </div>
           <div className="held-bar">
             <p className="held-status" aria-live="polite">
-              {solved ? '¡Resuelto!' : 'Sin resolver'} · {cube.moves}{' '}
-              {cube.moves === 1 ? 'movimiento' : 'movimientos'}
+              {mixing
+                ? `Mezclando… ${mixing.done}/${mixing.total}`
+                : `${solved ? '¡Resuelto!' : 'Sin resolver'} · ${cube.moves} ${cube.moves === 1 ? 'movimiento' : 'movimientos'}`}
             </p>
             <div className="row">
-              <button type="button" className="btn btn-sm" onClick={undo} disabled={!cube.history.length}>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={undo}
+                disabled={!cube.history.length || Boolean(mixing)}
+              >
                 Deshacer
               </button>
-              <button type="button" className="btn btn-sm" onClick={store.cubeScramble}>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => void mix()}
+                disabled={Boolean(mixing)}
+              >
                 Mezclar
               </button>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={store.cubeReset}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={store.cubeReset}
+                disabled={Boolean(mixing)}
+              >
                 Ordenar
               </button>
               <button

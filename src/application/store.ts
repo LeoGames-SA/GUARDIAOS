@@ -262,6 +262,15 @@ export class GameStore {
       const moves = scramble(mulberry32(Math.floor(Math.random() * 2 ** 31)), 20);
       return { state: moves.reduce(applyMove, SOLVED), history: [], moves: 0 };
     });
+  /**
+   * Mezcla visible: la vista anima una secuencia legal desde el estado actual y cada giro
+   * terminado se guarda (sin historial: la mezcla no se deshace). Cerrar o recargar a mitad
+   * deja el último giro completo, siempre un estado válido.
+   */
+  cubeScrambleMoves = (count = 20): Move[] =>
+    scramble(mulberry32(Math.floor(Math.random() * 2 ** 31)), count);
+  cubeScrambleStep = (move: Move) =>
+    this.updateCube((c) => ({ state: applyMove(c.state, move), history: [], moves: 0 }));
   cubeReset = () => this.updateCube(() => ({ state: SOLVED, history: [], moves: 0 }));
 
   private updateCube(fn: (c: Profile['cube']) => Profile['cube']) {

@@ -3856,3 +3856,16 @@ details > summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.cube-stage.mixing {
+  cursor: progress;
+}
+/* Mezcla con movimiento reducido: presentación breve sin giros animados. */
+.cube-flash .cube-canvas {
+  animation: cube-flash 260ms ease-out;
+}
+@keyframes cube-flash {
+  50% {
+    opacity: 0.35;
+  }
+}

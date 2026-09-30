@@ -23,6 +23,7 @@ import {
   type Object3D,
 } from 'three';
 import { applyMove, layerMove, moveLayer, stickerGeometry, type Move } from '../../engine/cube';
+import { gestureAngle, resolveGesture, snapQuarter, type Gesture, type Px, type V3 } from './cubeGesture';
 
 const COLORS: Record<string, string> = {
   U: '#f1efe6',
@@ -38,9 +39,11 @@ const QUARTER = Math.PI / 2;
 export interface CubeView {
   setState(state: string): void;
   /** Anima un giro y lo aplica al dibujo; `onMove` se llama sólo si `commit`. */
-  turn(move: Move, commit?: boolean): Promise<void>;
+  turn(move: Move, commit?: boolean, ms?: number): Promise<void>;
   rotateObject(dx: number, dy: number): void;
   busy(): boolean;
+  /** Diagnóstico de sólo lectura (pruebas): orientación y pegatinas visibles en pantalla. */
+  debug(): { q: number[]; stickers: { i: number; x: number; y: number; facing: number }[] };
   dispose(): void;
 }
 
@@ -102,6 +105,7 @@ export function createCubeView(canvas: HTMLCanvasElement, opts: CubeViewOptions)
 
   const cubies = new Map<string, Group>();
   const stickerMeshes: Mesh[] = [];
+  const bodyMeshes: Mesh[] = [];
   for (let x = -1; x <= 1; x++)
     for (let y = -1; y <= 1; y++)
       for (let z = -1; z <= 1; z++) {
@@ -109,7 +113,10 @@ export function createCubeView(canvas: HTMLCanvasElement, opts: CubeViewOptions)
         const g = new Group();
         g.position.set(x, y, z);
         g.userData.pos = [x, y, z];
-        g.add(new Mesh(bodyGeo, bodyMat));
+        const body = new Mesh(bodyGeo, bodyMat);
+        body.userData = { pos: [x, y, z] };
+        g.add(body);
+        bodyMeshes.push(body);
         root.add(g);
         cubies.set(`${x},${y},${z}`, g);
       }
@@ -208,13 +215,16 @@ export function createCubeView(canvas: HTMLCanvasElement, opts: CubeViewOptions)
   };
 
   let queue = Promise.resolve();
-  const turn = (move: Move, notify = true) => {
+  let pending = 0;
+  const turn = (move: Move, notify = true, ms = 170) => {
+    pending++;
     queue = queue.then(async () => {
+      pending--;
       if (disposed) return;
       animating = true;
       const { axis, layer, sign } = moveLayer(move);
       beginLayer(axis, layer);
-      await animateAngle(0, sign * QUARTER, 170);
+      await animateAngle(0, sign * QUARTER, ms);
       commit(move, notify);
       animating = false;
     });
@@ -222,30 +232,29 @@ export function createCubeView(canvas: HTMLCanvasElement, opts: CubeViewOptions)
   };
 
   // ---- gestos
+  // Arrastrar sobre el cubo gira la capa tocada; arrastrar en el espacio libre gira el objeto.
   const ray = new Raycaster();
   const ndc = new Vector2();
   type Drag =
-    | { kind: 'object'; x: number; y: number }
+    | { kind: 'object'; x: number; y: number; id: number }
     | {
         kind: 'pending' | 'layer';
+        id: number;
         x0: number;
         y0: number;
-        n: number[];
-        p: number[];
-        axis?: number;
-        layer?: number;
-        dir?: Vector2;
-        unit?: number;
-        sign?: number;
-        angle?: number;
+        point: V3;
+        normal: V3;
+        cubie: V3;
+        g?: Gesture;
+        angle: number;
       };
   let drag: Drag | null = null;
 
-  const toScreen = (local: Vector3) => {
+  const project = (p: V3): Px => {
     root.updateMatrixWorld();
-    const v = local.clone().applyMatrix4(root.matrixWorld).project(camera);
+    const v = new Vector3(...p).applyMatrix4(root.matrixWorld).project(camera);
     const r = canvas.getBoundingClientRect();
-    return new Vector2(((v.x + 1) / 2) * r.width, ((1 - v.y) / 2) * r.height);
+    return [((v.x + 1) / 2) * r.width, ((1 - v.y) / 2) * r.height];
   };
   const rotateObject = (dx: number, dy: number) => {
     const qy = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), dx * 0.01);
@@ -253,86 +262,77 @@ export function createCubeView(canvas: HTMLCanvasElement, opts: CubeViewOptions)
     root.quaternion.premultiply(qy).premultiply(qx);
     invalidate();
   };
+  const round = (v: Vector3): V3 => [Math.round(v.x), Math.round(v.y), Math.round(v.z)];
 
   const onDown = (e: PointerEvent) => {
-    if (animating || e.button > 0) return;
+    if (drag || animating || pending > 0 || e.button > 0) return;
     const r = canvas.getBoundingClientRect();
     ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     scene.updateMatrixWorld();
     ray.setFromCamera(ndc, camera);
-    const hit = ray.intersectObjects(stickerMeshes, false)[0];
+    // Pegatinas y cuerpos: tocar la ranura negra entre pegatinas también toma la capa.
+    const hit = ray.intersectObjects([...stickerMeshes, ...bodyMeshes], false)[0];
     canvas.setPointerCapture(e.pointerId);
     if (hit) {
       const obj = hit.object as Object3D;
-      drag = {
-        kind: 'pending',
-        x0: e.clientX,
-        y0: e.clientY,
-        n: obj.userData.normal as number[],
-        p: obj.userData.pos as number[],
-      };
-    } else {
-      drag = { kind: 'object', x: e.clientX, y: e.clientY };
-      opts.onGesture?.('object');
+      const cubie = (obj.userData.pos as V3).map(Math.round) as V3;
+      let normal: V3 | null = obj.userData.normal ? (obj.userData.normal as V3) : null;
+      if (!normal && hit.face) normal = round(hit.face.normal.clone());
+      const k = normal ? normal.findIndex((c) => c !== 0) : -1;
+      // Sólo caras exteriores (la normal apunta hacia afuera del cubo en ese cubito).
+      if (normal && k >= 0 && cubie[k] === normal[k]) {
+        const local = root.worldToLocal(hit.point.clone());
+        const point: V3 = [local.x, local.y, local.z];
+        point[k] = 1.5 * normal[k]!;
+        drag = {
+          kind: 'pending',
+          id: e.pointerId,
+          x0: e.clientX,
+          y0: e.clientY,
+          point,
+          normal,
+          cubie,
+          angle: 0,
+        };
+        return;
+      }
     }
+    drag = { kind: 'object', x: e.clientX, y: e.clientY, id: e.pointerId };
+    opts.onGesture?.('object');
   };
   const onMove = (e: PointerEvent) => {
     const d = drag;
-    if (!d) return;
+    if (!d || e.pointerId !== d.id) return;
     if (d.kind === 'object') {
       rotateObject(e.clientX - d.x, e.clientY - d.y);
       d.x = e.clientX;
       d.y = e.clientY;
       return;
     }
-    const mv = new Vector2(e.clientX - d.x0, e.clientY - d.y0);
+    const mv: Px = [e.clientX - d.x0, e.clientY - d.y0];
     if (d.kind === 'pending') {
-      if (mv.length() < 8) return;
-      // Elegir, entre los dos ejes de la cara tocada, el que mejor sigue al arrastre en pantalla.
-      const n = new Vector3(...(d.n as [number, number, number]));
-      const base = new Vector3(...(d.p as [number, number, number])).addScaledVector(n, 0.5);
-      const s0 = toScreen(base);
-      let best: { t: Vector3; dir: Vector2; len: number; score: number } | null = null;
-      for (const t of AXES) {
-        if (Math.abs(t.dot(n)) > 0.5) continue;
-        const st = toScreen(base.clone().add(t)).sub(s0);
-        const len = st.length();
-        if (len < 1) continue;
-        const dir = st.clone().divideScalar(len);
-        const score = Math.abs(dir.dot(mv) / mv.length());
-        if (!best || score > best.score) best = { t, dir, len, score };
-      }
-      if (!best) return;
-      const a = new Vector3().crossVectors(n, best.t); // girar sobre a mueve la pegatina hacia +t
-      const axis = [0, 1, 2].find((k) => Math.abs(a.getComponent(k)) > 0.5)!;
-      Object.assign(d, {
-        kind: 'layer',
-        axis,
-        layer: d.p[axis],
-        dir: best.dir,
-        unit: best.len,
-        sign: Math.sign(a.getComponent(axis)),
-        angle: 0,
-      });
-      beginLayer(axis, d.p[axis]!);
+      // Umbral: un clic no gira nada. Superado, el eje queda fijo hasta soltar.
+      const g = resolveGesture(d.point, d.normal, d.cubie, mv, project);
+      if (!g) return;
+      d.g = g;
+      d.kind = 'layer';
+      beginLayer(g.axis, g.layer);
       opts.onGesture?.('layer');
     }
-    if (d.kind === 'layer') {
-      const along = mv.dot(d.dir!) / d.unit!;
-      d.angle = Math.max(-QUARTER * 1.1, Math.min(QUARTER * 1.1, along * 0.95)) * d.sign!;
-      setLayerAngle(d.angle);
-    }
+    d.angle = gestureAngle(d.g!, mv, d.point, project);
+    setLayerAngle(d.angle);
   };
-  const onUp = async () => {
+  const onUp = async (e: PointerEvent) => {
     const d = drag;
+    if (!d || e.pointerId !== d.id) return;
     drag = null;
     opts.onGesture?.(null);
-    if (!d || d.kind !== 'layer') return;
-    // Encajar: más de ~35° completa el cuarto de vuelta; si no, vuelve a su lugar.
-    const target = Math.abs(d.angle!) > 0.6 ? Math.sign(d.angle!) : 0;
+    if (d.kind !== 'layer' || !d.g) return;
+    const target = snapQuarter(d.angle);
     animating = true;
-    await animateAngle(d.angle!, target * QUARTER, 120);
-    if (target) commit(layerMove(d.axis as 0 | 1 | 2, d.layer as -1 | 0 | 1, target as 1 | -1), true);
+    await animateAngle(d.angle, target * QUARTER, 120);
+    if (disposed) return;
+    if (target) commit(layerMove(d.g.axis, d.g.layer, target), true);
     else endLayer();
     animating = false;
   };
@@ -345,12 +345,28 @@ export function createCubeView(canvas: HTMLCanvasElement, opts: CubeViewOptions)
 
   return {
     setState: (s) => {
-      if (!animating && !drag) setState(s);
+      if (!animating && !drag && pending === 0) setState(s);
       else queue = queue.then(() => setState(s));
     },
     turn,
     rotateObject,
-    busy: () => animating || Boolean(drag),
+    busy: () => animating || pending > 0 || Boolean(drag),
+    debug: () => {
+      const r = canvas.getBoundingClientRect();
+      return {
+        q: root.quaternion.toArray() as number[],
+        stickers: stickerMeshes.map((m) => {
+          const i = m.userData.index as number;
+          const { p, n } = stickerGeometry(i);
+          const c: V3 = [p[0] + n[0] * 0.5, p[1] + n[1] * 0.5, p[2] + n[2] * 0.5];
+          const [x, y] = project(c);
+          const nw = new Vector3(...n).applyQuaternion(root.quaternion);
+          const cw = new Vector3(...c).applyMatrix4(root.matrixWorld);
+          const facing = nw.dot(camera.position.clone().sub(cw).normalize());
+          return { i, x: x + r.left, y: y + r.top, facing };
+        }),
+      };
+    },
     dispose() {
       disposed = true;
       cancelAnimationFrame(frame);
