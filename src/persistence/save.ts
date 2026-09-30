@@ -222,10 +222,31 @@ export function loadGame(storage: StorageLike, content: Content): LoadResult<Gam
   return reason ? { status: 'corrupt', reason } : { status: 'ok', data: r.data as GameState };
 }
 
+/**
+ * Migración de la práctica de audio anterior a la asistencia remota: la salida se elegía con
+ * «i-headset» y el volumen con «i-volume» sin valor. Se convierten a las acciones con parámetro
+ * y se completan los datos nuevos del mundo (silencio y sesión). Idempotente.
+ */
+export function migrateGame(g: unknown): void {
+  if (!isObj(g) || !isObj(g.cases)) return;
+  const cs = g.cases.p001;
+  if (!isObj(cs) || !isObj(cs.world) || !Array.isArray(cs.runs)) return;
+  if (cs.world.muted === undefined) cs.world.muted = false;
+  if (cs.world.session === undefined) cs.world.session = 'off';
+  for (const r of cs.runs) {
+    if (!isObj(r)) continue;
+    if (r.probeId === 'i-headset') {
+      r.probeId = 'i-output';
+      r.arg = 'headset';
+    } else if (r.probeId === 'i-volume' && r.arg === undefined) r.arg = '100';
+  }
+}
+
 export function loadPractice(storage: StorageLike, content: Content): LoadResult<PracticeSave> {
   const r = readEnvelope(storage, 'practice');
   if (r.status !== 'ok') return r;
   if (!isObj(r.data)) return { status: 'corrupt', reason: 'Práctica ilegible.' };
+  migrateGame(r.data.game);
   const reason = validateGame(content, r.data.game);
   if (reason) return { status: 'corrupt', reason };
   return {

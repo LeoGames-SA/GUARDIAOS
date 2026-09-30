@@ -355,8 +355,10 @@ describe('práctica y resumen', () => {
       s,
       { type: 'answerCall' },
       pp('q-what'),
+      pp('q-assist'),
+      pp('r-connect'),
       pp('t-output'),
-      pp('i-headset'),
+      { type: 'probe', caseId: 'p001', probeId: 'i-output', arg: 'headset' },
       pp('t-sound'),
       pp('v-hear'),
       {
@@ -459,5 +461,84 @@ describe('llamadas: espera, retomar y despedida', () => {
     const last = s.cases.c002!.messages.at(-1)!;
     expect(last.outgoing).toBe(true);
     expect(last.subject).toContain('[resuelto]');
+  });
+});
+
+describe('asistencia remota (práctica de audio)', () => {
+  const pp = (id: string, arg?: string): Action => ({
+    type: 'probe',
+    caseId: 'p001',
+    probeId: id,
+    ...(arg !== undefined ? { arg } : {}),
+  });
+  const blockedBy = (s: GameState, a: Action) =>
+    (step(CONTENT, s, a).events.find((e) => e.type === 'blocked') as { reason: string } | undefined)?.reason;
+  const start = () =>
+    run(createGame(CONTENT, { mode: 'practice', nightId: 'practice', seed: 0 }), { type: 'answerCall' })
+      .state;
+
+  it('sin autorización no hay conexión; aceptar la registra y conectar abre una sola sesión', () => {
+    let s = start();
+    expect(blockedBy(s, pp('r-connect'))).toMatch(/acepte/);
+    expect(blockedBy(s, pp('t-output'))).toMatch(/conectate/);
+    s = run(s, pp('q-assist')).state;
+    expect(s.cases.p001!.flags).toContain('assist-ok');
+    expect(s.call!.lines.at(-1)!.text).toMatch(/Aceptar/);
+    s = run(s, pp('r-connect')).state;
+    expect(s.cases.p001!.world.session).toBe('on');
+    expect(blockedBy(s, pp('r-connect'))).toMatch(/Ya hay una sesión/);
+    expect(s.history.filter((h) => h.action.startsWith('Conectar')).length).toBe(1);
+  });
+
+  it('observar dos veces no duplica notas; cambiar la salida es un intento, no una verificación', () => {
+    let s = run(
+      start(),
+      pp('q-assist'),
+      pp('r-connect'),
+      pp('t-output'),
+      pp('t-volume'),
+      pp('t-devices'),
+    ).state;
+    const notes = s.cases.p001!.notes.length;
+    s = run(s, pp('t-output'), pp('t-volume'), pp('t-devices')).state;
+    expect(s.cases.p001!.notes.length).toBe(notes);
+    s = run(s, pp('i-output', 'headset')).state;
+    const cs = s.cases.p001!;
+    expect(cs.notes.at(-1)!.kind).toBe('tried');
+    expect(cs.confirmed).toBe(false);
+    expect(blockedBy(s, { type: 'close', caseId: 'p001' })).toMatch(/confirme/);
+  });
+
+  it('una salida equivocada o el silencio no resuelven; la confirmación depende del estado real', () => {
+    let s = run(start(), pp('q-assist'), pp('r-connect'), pp('i-output', 'analog'), pp('v-hear')).state;
+    expect(s.cases.p001!.confirmed).toBe(false);
+    expect(s.cases.p001!.notes.at(-1)!.verify).toBe('no');
+    s = run(s, pp('i-output', 'headset'), pp('i-mute', 'on'), pp('v-hear')).state;
+    expect(s.cases.p001!.confirmed).toBe(false);
+    expect(s.call!.lines.at(-1)!.text).toMatch(/auriculares puestos/);
+    s = run(s, pp('i-mute', 'off'), pp('v-hear')).state;
+    expect(s.cases.p001!.confirmed).toBe(true);
+    expect(s.cases.p001!.notes.at(-1)!.verify).toBe('ok');
+  });
+
+  it('desconectar y reconectar conserva lo hecho en el equipo, sin volver a pedir permiso', () => {
+    let s = run(
+      start(),
+      pp('q-assist'),
+      pp('r-connect'),
+      pp('i-output', 'headset'),
+      pp('r-disconnect'),
+    ).state;
+    expect(s.cases.p001!.world).toMatchObject({ session: 'off', output: 'headset' });
+    expect(blockedBy(s, pp('t-sound'))).toMatch(/conectate/);
+    s = run(s, pp('r-connect'), pp('t-sound')).state;
+    expect(s.cases.p001!.runs.at(-1)!.summary).toMatch(/Auriculares USB/);
+  });
+
+  it('las acciones con opciones rechazan valores ajenos', () => {
+    const s = run(start(), pp('q-assist'), pp('r-connect')).state;
+    expect(blockedBy(s, pp('i-output', 'bluetooth'))).toMatch(/Opción desconocida/);
+    expect(blockedBy(s, pp('i-output'))).toMatch(/Opción desconocida/);
+    expect(blockedBy(s, pp('t-output', 'x'))).toMatch(/no lleva opciones/);
   });
 });

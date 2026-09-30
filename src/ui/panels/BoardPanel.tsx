@@ -271,12 +271,12 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
                         <button
                           key={n.id}
                           type="button"
-                          className={`note note-${n.kind} ${on ? 'on' : ''}`}
+                          className={`note note-${n.kind} ${on ? 'on' : ''} ${n.verify ? `note-verify verify-${n.verify}` : ''}`}
                           aria-pressed={on}
                           aria-disabled={readOnly || undefined}
                           style={{ '--tilt': `${((i * 53) % 5) - 2}deg` } as CSSProperties}
                           onClick={() => toggle(n)}
-                          aria-label={`${col.title}: ${n.text}. ${on ? `Conectada: ${REL_TEXT[rel]}.` : 'Sin conectar.'}`}
+                          aria-label={`${col.title}${n.verify ? (n.verify === 'ok' ? ' (confirmación)' : ' (verificación: no)') : ''}: ${n.text}. ${on ? `Conectada: ${REL_TEXT[rel]}.` : 'Sin conectar.'}`}
                         >
                           <span
                             className="pin"
@@ -287,6 +287,11 @@ export function BoardPanel({ game, onClose }: { game: GameState; onClose: () => 
                           >
                             <img src={artInfo('pushpin').file} alt="" />
                           </span>
+                          {n.verify && (
+                            <span className="note-stamp" aria-hidden="true">
+                              {n.verify === 'ok' ? 'Confirmó' : 'Verificación: no'}
+                            </span>
+                          )}
                           <span className="note-text">{n.text}</span>
                           <span className="note-meta">
                             {game.mode === 'practice' ? '' : clock(n.at)}

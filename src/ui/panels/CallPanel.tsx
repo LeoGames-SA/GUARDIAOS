@@ -133,6 +133,21 @@ export function CallPanel({
   const helpSeen = useRef(readHelpSeen());
   const [unseen, setUnseen] = useState(0);
   const logRef = useRef<HTMLOListElement>(null);
+  // Altura real de la llamada contraída: los paneles reservan ese espacio (en móvil va abajo).
+  const pillRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = pillRef.current;
+    const root = document.documentElement;
+    if (!collapsed || !el) return;
+    const set = () => root.style.setProperty('--call-pill-h', `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty('--call-pill-h');
+    };
+  }, [collapsed]);
   const panelRef = useRef<HTMLElement>(null);
   const name = cs.contactKnown ? def.contact.name : 'Número interno';
   const state: CallStateLabel = ended ? 'finalizada' : held ? 'en espera' : 'conversación';
@@ -227,6 +242,7 @@ export function CallPanel({
   if (collapsed) {
     return (
       <aside
+        ref={pillRef}
         className={`call call-pill call-mini state-${state.replace(' ', '-')}`}
         aria-label={`Llamada con ${name}`}
       >
@@ -499,6 +515,7 @@ export function CallPanel({
                     key={q.id}
                     type="button"
                     className="btn btn-sm chip"
+                    data-tut={q.id}
                     onClick={() => store.dispatch({ type: 'probe', caseId: cs.id, probeId: q.id })}
                   >
                     {q.label}
@@ -512,6 +529,7 @@ export function CallPanel({
                       key={v.id}
                       type="button"
                       className="btn btn-sm chip chip-verify"
+                      data-tut={v.id}
                       aria-disabled={reason ? true : undefined}
                       title={reason ?? undefined}
                       onClick={() =>

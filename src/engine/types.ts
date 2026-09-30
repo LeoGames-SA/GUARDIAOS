@@ -81,9 +81,14 @@ export interface ProbeDef {
   risk?: string;
   /** Comandos de consola equivalentes. */
   console?: string[];
+  /**
+   * Valores admitidos cuando la acción lleva un parámetro (p. ej. qué salida elegir en un
+   * selector). Cada valor es una acción distinta para la relectura y el historial.
+   */
+  args?: readonly string[];
   /** Devuelve un motivo si todavía no está disponible. */
-  requires?: (c: CaseView) => string | null;
-  run: (w: World, c: CaseView) => ProbeResult;
+  requires?: (c: CaseView, arg?: string) => string | null;
+  run: (w: World, c: CaseView, arg?: string) => ProbeResult;
 }
 
 export interface HypothesisDef {
@@ -115,6 +120,31 @@ export interface MailMessage {
   outgoing?: boolean;
 }
 
+/**
+ * Escritorio remoto de un caso. Todo es simulado: los controles despachan acciones del motor
+ * (probes) sobre el mismo mundo del expediente. Convención de mundo: `session` ('on' | 'off').
+ * Para sonido: `output` (id de salida), `volume` (0–100) y `muted` (booleano).
+ */
+export interface RemoteDesktopDef {
+  device: string;
+  /** Pregunta por teléfono que pide la autorización y bandera que deja al aceptar. */
+  consent: { probe: string; flag: string };
+  connect: string;
+  disconnect: string;
+  sound?: {
+    outputs: { id: string; label: string; kind: 'hdmi' | 'usb' | 'analog' }[];
+    /** Observaciones (lectura) y cambios (intervenciones), por id de acción. */
+    readOutput: string;
+    readVolume: string;
+    readDevices: string;
+    readProperties: string;
+    test: string;
+    setOutput: string;
+    setVolume: string;
+    setMute: string;
+  };
+}
+
 export interface CaseDef {
   id: string;
   number: string;
@@ -133,6 +163,8 @@ export interface CaseDef {
   hypotheses: HypothesisDef[];
   probes: ProbeDef[];
   isFixed: (w: World) => boolean;
+  /** Asistencia remota interactiva (escritorio simulado del equipo de la persona). */
+  remote?: RemoteDesktopDef;
   /** Líneas al atender la primera llamada (la primera la dice Nico). */
   opening?: { nico: string; contact: string[] };
   /** Mensaje inicial para correo o alerta automática. */
@@ -178,10 +210,13 @@ export interface Note {
   at: Minute;
   probeId: string;
   relations: Record<string, Relation>;
+  /** Confirmación pedida a la persona: «ok» si confirmó que funciona, «no» si no. */
+  verify?: 'ok' | 'no';
 }
 
 export interface ProbeRun {
   probeId: string;
+  arg?: string;
   version: number;
   at: Minute;
   summary: string;
@@ -327,7 +362,7 @@ export type Action =
   | { type: 'reassure'; kind: 'urgency' | 'evidence' | 'probable'; noteId?: string }
   | { type: 'take'; caseId: string }
   | { type: 'focus'; caseId: string }
-  | { type: 'probe'; caseId: string; probeId: string }
+  | { type: 'probe'; caseId: string; probeId: string; arg?: string }
   | { type: 'link'; caseId: string; noteId: string; hypId: string }
   | { type: 'unlink'; caseId: string; noteId: string; hypId: string }
   | { type: 'setWorking'; caseId: string; hypId: string | null }

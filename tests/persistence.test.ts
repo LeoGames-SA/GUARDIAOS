@@ -7,6 +7,7 @@ import {
   KEYS,
   loadGame,
   loadPrefs,
+  loadPractice,
   loadProfile,
   quarantine,
   write,
@@ -95,6 +96,37 @@ describe('guardado', () => {
     const r = loadGame(st, CONTENT);
     expect(r.status).toBe('ok');
     if (r.status === 'ok') expect(r.data.call?.held).toBeFalsy();
+  });
+
+  it('una práctica de audio guardada antes de la asistencia remota se migra y sigue jugable', () => {
+    const st = memory();
+    let g = createGame(CONTENT, { mode: 'practice', nightId: 'practice', seed: 1 });
+    g = step(CONTENT, g, { type: 'answerCall' }).state;
+    // Forma anterior: salida elegida con «i-headset», volumen sin valor, mundo sin silencio ni sesión.
+    const old = JSON.parse(JSON.stringify(g)) as typeof g;
+    const cs = old.cases.p001!;
+    delete (cs.world as Record<string, unknown>).muted;
+    delete (cs.world as Record<string, unknown>).session;
+    cs.world.output = 'headset';
+    cs.runs.push(
+      { probeId: 'i-headset', version: 0, at: 0, summary: 'x', detail: [], noteId: null },
+      { probeId: 'i-volume', version: 0, at: 0, summary: 'x', detail: [], noteId: null },
+    );
+    write(st, 'practice', { game: old, returnTo: 'menu' });
+    const r = loadPractice(st, CONTENT);
+    expect(r.status).toBe('ok');
+    if (r.status !== 'ok') return;
+    const m = r.data.game.cases.p001!;
+    expect(m.world).toMatchObject({ muted: false, session: 'off', output: 'headset' });
+    expect(m.runs.map((x) => [x.probeId, x.arg])).toEqual(
+      expect.arrayContaining([
+        ['i-output', 'headset'],
+        ['i-volume', '100'],
+      ]),
+    );
+    // Sigue jugable: la verificación reconoce el cambio y la salida correcta.
+    const v = step(CONTENT, r.data.game, { type: 'probe', caseId: 'p001', probeId: 'v-hear' });
+    expect(v.state.cases.p001!.confirmed).toBe(true);
   });
 
   it('las preferencias inválidas vuelven a valores seguros', () => {

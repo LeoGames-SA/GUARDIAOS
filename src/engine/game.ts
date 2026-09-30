@@ -541,7 +541,7 @@ export function step(content: Content, prev: GameState, action: Action): StepRes
       return { state, events };
     }
     case 'probe':
-      return runProbe(content, prev, state, action.caseId, action.probeId);
+      return runProbe(content, prev, state, action.caseId, action.probeId, action.arg);
     case 'link':
     case 'unlink': {
       const cs = state.cases[action.caseId];
@@ -757,8 +757,12 @@ export function probeCost(
   state: GameState,
   cs: CaseState,
   probe: ProbeDef,
+  arg?: string,
 ): { cost: Minute; reread: boolean } {
-  const reread = cs.runs.some((r) => r.probeId === probe.id && r.version === cs.version);
+  // Releer un dato que no cambió no cuesta ni crea notas (con parámetro, por valor).
+  const reread = cs.runs.some(
+    (r) => r.probeId === probe.id && r.version === cs.version && (r.arg ?? '') === (arg ?? ''),
+  );
   if (reread || state.mode === 'practice') return { cost: 0, reread };
   return { cost: adjustedCost(probe.cost, state.needs), reread };
 }
@@ -768,14 +772,17 @@ export function probeBlockReason(
   def: CaseDef,
   cs: CaseState,
   probe: ProbeDef,
+  arg?: string,
 ): string | null {
+  if (probe.args && (arg === undefined || !probe.args.includes(arg))) return 'Opción desconocida.';
+  if (!probe.args && arg !== undefined) return 'Esta acción no lleva opciones.';
   if (cs.status === 'closed') return 'El expediente está cerrado.';
   if (cs.status !== 'active') return 'Primero tomá el expediente.';
   if (probe.app === 'phone' && state.call?.caseId !== cs.id)
     return `Hace falta estar en llamada con ${cs.contactKnown ? def.contact.short : 'la persona'}.`;
   if (probe.app === 'phone' && state.call?.held) return 'La llamada está en espera: retomala para hablar.';
   if (probe.app === 'phone' && state.call?.ended) return 'La conversación ya terminó.';
-  return probe.requires?.(caseView(cs)) ?? null;
+  return probe.requires?.(caseView(cs), arg) ?? null;
 }
 
 function runProbe(
@@ -784,6 +791,7 @@ function runProbe(
   state: GameState,
   caseId: string,
   probeId: string,
+  arg?: string,
 ): StepResult {
   const events: GameEvent[] = [];
   const cs = state.cases[caseId];
@@ -791,13 +799,13 @@ function runProbe(
   const def = getCaseDef(content, caseId);
   const probe = def.probes.find((p) => p.id === probeId);
   if (!probe) return { state: prev, events: [{ type: 'blocked', reason: 'Acción desconocida.' }] };
-  const reason = probeBlockReason(state, def, cs, probe);
+  const reason = probeBlockReason(state, def, cs, probe, arg);
   if (reason) return { state: prev, events: [{ type: 'blocked', reason }] };
-  const { cost, reread } = probeCost(state, cs, probe);
+  const { cost, reread } = probeCost(state, cs, probe, arg);
   if (reread) return { state: prev, events: [{ type: 'result', caseId, probeId, reread: true }] };
 
   const observed = cs.version;
-  const res = probe.run(cs.world, caseView(cs));
+  const res = probe.run(cs.world, caseView(cs), arg);
   if (res.world) applyWorld(cs, res.world);
   for (const f of res.flags ?? []) if (!cs.flags.includes(f)) cs.flags.push(f);
   if (res.trust) cs.trust = clamp(cs.trust + res.trust, 0, TRUST_MAX);
@@ -821,12 +829,14 @@ function runProbe(
         at: state.minute,
         probeId,
         relations: { ...(res.relations ?? {}) },
+        ...(probe.kind === 'verify' ? { verify: cs.confirmed ? ('ok' as const) : ('no' as const) } : {}),
       });
       events.push({ type: 'note', caseId, noteId });
     }
   }
   const run = {
     probeId,
+    ...(arg !== undefined ? { arg } : {}),
     version: observed,
     at: state.minute,
     summary: res.summary,

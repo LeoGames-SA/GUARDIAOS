@@ -10,6 +10,7 @@ import { ProbeCard } from '../common/ProbeCard';
 import { CHANNEL, priority } from '../common/ticket';
 import { MailApp } from './mail';
 import { BrowserApp } from './browser';
+import { RemoteAssist } from './remote';
 import { wm } from './windows';
 
 type Open = (app: AppId, target?: string) => void;
@@ -986,6 +987,8 @@ function RemoteSession({ game, open, target }: AppProps & { target: string }) {
     ? def.probes.filter((p) => p.target === target && (p.app === 'remote' || p.app === 'network'))
     : [];
   const belongs = def?.devices.includes(target);
+  if (def?.remote?.device === target && cs && belongs)
+    return <RemoteAssist game={game} def={def} cs={cs} onDisconnected={() => undefined} />;
   return (
     <div className="app remote">
       <div className="remote-bar">

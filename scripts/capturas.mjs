@@ -162,13 +162,32 @@ for (const size of SIZES) {
   });
   await shoot(size, 'remoto', async (p, m) => {
     await p.evaluate(() => {
-      window.__tdg.setPrefs({ typewriter: false, sound: false });
-      window.__tdg.startPractice('menu');
-      window.__tdg.dispatch({ type: 'answerCall' });
+      const t = window.__tdg;
+      t.setPrefs({ typewriter: false, sound: false });
+      t.startPractice('menu');
+      t.dispatch({ type: 'answerCall' });
+      for (const id of ['q-devices', 'q-assist', 'r-connect'])
+        t.dispatch({ type: 'probe', caseId: 'p001', probeId: id });
     });
     await openApp(p, m, 'Acceso remoto');
     const pc = p.getByRole('button', { name: /PC-REC-01/ });
     if (await pc.isVisible().catch(() => false)) await pc.click();
+    await p.getByRole('button', { name: /Sonido del equipo remoto/ }).click();
+    await p
+      .getByRole('region', { name: 'Sonido' })
+      .getByRole('button', { name: /Monitor DELL/ })
+      .click();
+  });
+  await shoot(size, 'remoto-conexion', async (p, m) => {
+    await p.evaluate(() => {
+      const t = window.__tdg;
+      t.setPrefs({ typewriter: false, sound: false });
+      t.startPractice('menu');
+      t.dispatch({ type: 'answerCall' });
+      t.dispatch({ type: 'probe', caseId: 'p001', probeId: 'q-assist' });
+    });
+    await openApp(p, m, 'Acceso remoto');
+    await p.getByRole('button', { name: /PC-REC-01/ }).click();
   });
   await shoot(size, 'ticket', async (p, m) => {
     await start(p);

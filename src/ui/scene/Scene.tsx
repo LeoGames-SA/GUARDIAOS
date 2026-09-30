@@ -175,6 +175,9 @@ function MiniScreen({ game, second }: { game: GameState | null; second?: boolean
                 {def.number} · {def.title}
               </b>
               <span>{focus?.notes.length ?? 0} notas en la pizarra</span>
+              {focus?.world.session === 'on' && def.remote && (
+                <span className="mini-session">● Sesión remota abierta: {def.remote.device}</span>
+              )}
             </>
           ) : (
             <b>Sin expediente activo</b>
