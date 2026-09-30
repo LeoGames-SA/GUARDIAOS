@@ -16,7 +16,7 @@ Manifiesto de derivados: `src/content/art-manifest.json`. Posiciones: `src/conte
 ## Calibraciones
 
 - **Vidrio del monitor**: medido sobre el derivado con grilla al 5 %: x 10,3 %, y 9,7 %, ancho 79,5 %, alto 59,7 % (`MONITOR_GLASS`). La estimación del paquete (zona semitransparente) era más chica y desplazada.
-- **Encuadre abierto** (`station.ts`): los objetos se reubicaron para que ninguno quede cortado en los bordes; la base del teléfono está en `x 64, y 566, ancho 330` y el auricular se deriva de ella con la calibración de las horquillas (`HANDSET_CAL`: desplazamiento 50/12 y ancho 115 sobre 400), así se mueven juntos. Coordenadas de escena (fondo 1672×941) separadas de las posiciones de la interfaz (`--sw/--sh/--sl/--sb`, escenario con tope de 1840 px).
+- **Mesa con profundidad** (`station.ts`): la superficie del fondo va de y≈512 (pared) a y≈885 (borde frontal). Ningún objeto baja de `FRONT_LIMIT` (836), así queda una franja de madera visible delante del cuaderno, el teclado y el plato (prueba e2e en 4 tamaños). Fila del fondo (taza, cubo, pelota, portalápices, avisos) hasta y≈650. Sombras de contacto elípticas (`CONTACT`) bajo cada objeto apoyado. La base del teléfono está en `x 70, y 556, ancho 320` y el auricular se deriva con `HANDSET_CAL`. Coordenadas de escena separadas de las posiciones de interfaz (`--sw/--sh/--sl/--sb`, escenario con tope de 2240 px).
 - **Visor del teléfono**: tres esquinas del LCD medidas sobre el dibujo (`PHONE_LCD`); el texto («LLAMADA», «EN ESPERA», «EN LÍNEA», hora) es SVG con una matriz afín que sigue la perspectiva del visor.
 - **Mano con auricular**: anclada al borde inferior izquierdo (el brazo está cortado en el lienzo), `x −10, y 700, ancho 160`. Oculta el auricular suelto; en espera se guarda y vuelve el auricular a la base. La tarjeta de la llamada va arriba a la izquierda y no baja hasta el teléfono (prueba e2e), así la mano queda a la vista. Sin puntero.
 - **Mano con taza**: al hacer clic en la taza, la mano levanta, acerca y devuelve la taza (2,1 s, se salta con clic/Esc/Enter/Espacio; 0,7 s estática con movimiento reducido). Oculta la taza de la mesa: nunca hay dos tazas.
@@ -26,6 +26,9 @@ Manifiesto de derivados: `src/content/art-manifest.json`. Posiciones: `src/conte
 - **Mano con mouse**: no se usa. Con GuardiaOS abierto quedaría detrás del panel, y fuera de él no hay acción que la justifique sin parecer un cursor. Se documenta como decisión.
 - Mesa: la superficie empieza en y≈512 del fondo; todos los objetos apoyados tienen su base por debajo.
 - Segundo monitor: reutiliza la carcasa a 276 px de ancho a la derecha; con la mejora, el monitor principal se corre a la izquierda.
+
+- **Ticket impreso**: ya no usa el dibujo con muescas (parecía un cupón). Es una hoja de oficina en DOM (texto real y seleccionable), con textura y desgaste discretos en CSS; el equipo afectado se «anota a mano» sólo cuando se conoce.
+- **Escritorio remoto**: fondo claro y barra de tareas propios del equipo de la persona, con franja naranja persistente, para que no se confunda con GuardiaOS.
 
 ## Efectos programados
 

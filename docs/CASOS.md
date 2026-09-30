@@ -10,13 +10,15 @@ Organización ficticia: **Mutual Sur, sede central**. Dominio simulado `mutualsu
 ## Práctica — «No se escucha el audio de la PC» (teléfono, fijo)
 
 - **Síntoma**: un video se reproduce en PC-REC-01 (recepción) pero no se escucha.
-- **Causa**: la salida predeterminada es el monitor HDMI, que no tiene altavoces. Hay auriculares USB conectados.
-- **Alternativas plausibles**: video silenciado; auriculares rotos.
-- **Persona**: Marta Quiroga, recepción. Se presenta en su primera intervención.
-- **Pruebas**: revisar dispositivo de salida (acceso remoto → Sonido) → C «La salida es el monitor HDMI, sin altavoces».
-- **Intervenciones**: subir volumen (no cambia, orienta); elegir Auriculares USB como salida (corrige).
-- **Verificación**: sonido de prueba + preguntarle si ahora escucha.
-- **Costos**: ninguno. No consume tiempo de campaña ni tiene penalizaciones.
+- **Causa**: la salida seleccionada es el monitor DELL por HDMI, que no tiene altavoces. Marta escucha con auriculares USB conectados.
+- **Alternativas plausibles**: silenciado o volumen en 0; auriculares rotos.
+- **Persona**: Marta Quiroga, recepción. Se presenta en su primera intervención; si se le pregunta qué usa para escuchar, dice que auriculares USB.
+- **Asistencia remota** (`CaseDef.remote`): Nico pide permiso por teléfono (`q-assist` → bandera `assist-ok`); conectar/desconectar (`r-connect`/`r-disconnect`) cambia `world.session`. Recargar no repite ni duplica la sesión.
+- **Observaciones** (Comprobé, releer no duplica): salida seleccionada (`t-output`), volumen y silencio (`t-volume`), salidas disponibles (`t-devices`: altavoces analógicos sin nada enchufado, auriculares USB, monitor HDMI), propiedades por salida (`t-props`, con parámetro), prueba de sonido con medidor (`t-sound`: indica si la señal sale, no si la persona escucha).
+- **Intervenciones** (Intenté, con parámetro): elegir salida (`i-output`), volumen (`i-volume`, 0–100 de a 10), silencio (`i-mute`). Ninguna confirma por sí sola.
+- **Verificación**: preguntarle si ahora escucha (`v-hear`). Confirma sólo si la salida son los auriculares, sin silencio y con volumen > 0; si no, «sigue sin escucharse» (sello «Verificación: no» en la pizarra).
+- **Costos**: ninguno. No consume tiempo de campaña ni tiene penalizaciones ni límite de acciones.
+- **Migración**: prácticas guardadas con la versión anterior (`i-headset`, `i-volume` sin valor) se convierten al cargar.
 
 ---
 
