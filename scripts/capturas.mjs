@@ -153,6 +153,45 @@ for (const size of SIZES) {
     await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
     await p.mouse.down(); // se captura apretada
   });
+  // Estados de la revisión del jugador (mesa de práctica, acceso remoto, ticket, espera).
+  await shoot(size, 'practica-mesa', async (p) => {
+    await p.evaluate(() => {
+      window.__tdg.setPrefs({ typewriter: false, sound: false });
+      window.__tdg.startPractice('menu');
+    });
+  });
+  await shoot(size, 'remoto', async (p, m) => {
+    await p.evaluate(() => {
+      window.__tdg.setPrefs({ typewriter: false, sound: false });
+      window.__tdg.startPractice('menu');
+      window.__tdg.dispatch({ type: 'answerCall' });
+    });
+    await openApp(p, m, 'Acceso remoto');
+    const pc = p.getByRole('button', { name: /PC-REC-01/ });
+    if (await pc.isVisible().catch(() => false)) await pc.click();
+  });
+  await shoot(size, 'ticket', async (p, m) => {
+    await start(p);
+    await p.evaluate(() => window.__tdg.dispatch({ type: 'answerCall' }));
+    const collapse = p.getByRole('button', { name: 'Contraer la llamada' });
+    if (m && (await collapse.isVisible().catch(() => false))) await collapse.click();
+    await (
+      m
+        ? p.locator('.mobile-nav').getByRole('button', { name: 'Ticket' })
+        : p.getByRole('button', { name: /Ticket del expediente/ })
+    ).click();
+  });
+  await shoot(size, 'espera', async (p) => {
+    await start(p);
+    await p.evaluate(() => {
+      const t = window.__tdg;
+      t.dispatch({ type: 'answerCall' });
+      for (const id of ['q-changes', 'q-message', 't-service'])
+        t.dispatch({ type: 'probe', caseId: 'c001', probeId: id });
+      t.dispatch({ type: 'hold' });
+    });
+    await p.waitForTimeout(2500);
+  });
   await shoot(size, 'informe', async (p) => {
     await start(p, 1);
     await p.evaluate(() => {

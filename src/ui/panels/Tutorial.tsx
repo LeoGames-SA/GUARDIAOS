@@ -78,7 +78,7 @@ export function TutorialHint({ game, panel }: { game: GameState; panel: PanelSta
   if (cs?.status === 'closed') {
     return (
       <div className="tutorial done" role="status">
-        <b>Práctica completa.</b>
+        <span className="tutorial-tag">Práctica completa</span>
         <p>Ya sabés atender, investigar, anotar en la pizarra, intervenir y verificar.</p>
         <div className="row wrap">
           {returnTo === 'campaign' ? (
@@ -116,7 +116,9 @@ export function TutorialHint({ game, panel }: { game: GameState; panel: PanelSta
   if (!step) return null;
   return (
     <div className="tutorial" role="status" aria-live="polite">
-      <span className="tutorial-tag">Práctica</span> {step.text}
+      <span className="tutorial-text">
+        <span className="tutorial-tag">Práctica</span> {step.text}
+      </span>
     </div>
   );
 }

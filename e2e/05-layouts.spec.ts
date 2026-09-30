@@ -39,3 +39,47 @@ for (const size of SIZES) {
     expect(errors).toEqual([]);
   });
 }
+
+for (const size of SIZES) {
+  test(`mesa ${size.width}×${size.height}: objetos apoyados con madera delante; tutorial sin tapar`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(size);
+    await fresh(page);
+    await page.getByRole('button', { name: /Cómo se juega/ }).click();
+    // Todos los objetos delanteros terminan antes del borde de la mesa (y≈885 de 941) con margen.
+    const gaps = await page.evaluate(() => {
+      const stage = document.querySelector('.stage')!.getBoundingClientRect();
+      const edge = stage.top + (stage.height * 885) / 941;
+      const sel = [
+        '[data-target=notebook]',
+        '[data-target=ticket]',
+        '[data-target=snack]',
+        '[data-target=phone]',
+        'img.decor[src*="keyboard"]',
+        'img.decor[src*="mouse"]',
+      ];
+      return Object.fromEntries(
+        sel
+          .map((s) => [s, document.querySelector(s)] as const)
+          .filter(([, el]) => el)
+          .map(([s, el]) => [s, (edge - el!.getBoundingClientRect().bottom) / stage.height]),
+      );
+    });
+    for (const [sel, gap] of Object.entries(gaps)) expect(gap, sel).toBeGreaterThan(0.04);
+    // La indicación del tutorial queda fuera del escenario y de la barra de tareas de GuardiaOS.
+    const tut = page.locator('.tutorial');
+    await expect(tut).toBeVisible();
+    const t = (await tut.boundingBox())!;
+    const stage = (await page.locator('.stage').boundingBox())!;
+    expect(t.y + t.height).toBeLessThanOrEqual(stage.y + 1);
+    const mobile = size.width < 700;
+    await (
+      mobile
+        ? page.locator('.mobile-nav').getByRole('button', { name: 'Monitor' })
+        : page.getByRole('button', { name: /Monitor: abrir GuardiaOS/ })
+    ).click();
+    const bar = (await page.locator('.os-taskbar').boundingBox())!;
+    expect(t.y + t.height).toBeLessThanOrEqual(bar.y);
+  });
+}

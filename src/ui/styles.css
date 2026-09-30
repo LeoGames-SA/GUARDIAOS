@@ -25,9 +25,11 @@
   --radius: 10px;
   --font: 'Segoe UI', 'Inter', system-ui, -apple-system, 'Noto Sans', sans-serif;
   --mono: 'JetBrains Mono', 'Cascadia Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --hud-row: 52px;
+  --tut-row: 48px;
   --hud-h: 52px;
   /* Geometría del escenario (interfaz): ancho con tope, alto por proporción y márgenes. */
-  --sw: min(100vw, calc((100vh - var(--hud-h)) * 1672 / 941), 1840px);
+  --sw: min(100vw, calc((100vh - var(--hud-h)) * 1672 / 941), 2240px);
   --sh: calc(var(--sw) * 941 / 1672);
   --sl: calc((100vw - var(--sw)) / 2);
   --sb: calc((100vh - var(--hud-h) - var(--sh)) / 2);
@@ -197,6 +199,19 @@ p {
   width: 100%;
   height: 100%;
   user-select: none;
+}
+.contacts {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+/* Sombra de contacto: el objeto se apoya en la madera (oclusión bajo la base). */
+.contact {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, #000000b8 0%, #0000006e 45%, transparent 72%);
+  filter: blur(0.15cqw);
 }
 .decor {
   position: absolute;
@@ -2543,21 +2558,44 @@ details > summary {
 
 /* ------------------------------------------------------------ tutorial */
 .tutorial {
+  /* Franja propia bajo la barra superior: no tapa objetos de la mesa ni la barra de tareas
+     de GuardiaOS (el escenario y los paneles empiezan debajo). */
   position: fixed;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  z-index: 350;
-  max-width: min(640px, calc(100vw - 24px));
-  background: #10252ef5;
-  border: 1px solid var(--amber);
-  border-radius: 12px;
-  padding: 10px 16px;
-  box-shadow: 0 10px 30px #000a;
-  font-size: 0.95rem;
+  left: 0;
+  right: 0;
+  top: var(--hud-row);
+  height: var(--tut-row);
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: #10252ef2;
+  border-bottom: 1px solid #efb95f66;
+  font-size: 0.92rem;
+  line-height: 1.3;
+  text-align: center;
 }
-.tutorial.done {
-  text-align: left;
+.tutorial > span.tutorial-text {
+  max-width: 980px;
+}
+.tutorial .row {
+  flex-wrap: nowrap;
+}
+.tutorial.done p {
+  margin: 0;
+}
+/* En la práctica la franja del tutorial es parte de la cabecera: el escenario se ubica debajo. */
+.desk[data-practice] {
+  --hud-h: calc(var(--hud-row) + var(--tut-row));
+  --sw: min(100vw, calc((100vh - var(--hud-h)) * 1672 / 941), 2240px);
+  --sh: calc(var(--sw) * 941 / 1672);
+  --sl: calc((100vw - var(--sw)) / 2);
+  --sb: calc((100vh - var(--hud-h) - var(--sh)) / 2);
+}
+.desk[data-practice] .hud {
+  height: var(--hud-row);
 }
 .tutorial-tag {
   font-size: 0.72rem;
@@ -2772,7 +2810,11 @@ details > summary {
     display: none;
   }
   .tutorial {
-    bottom: 8px;
+    font-size: 0.82rem;
+    padding: 0 10px;
+  }
+  :root {
+    --tut-row: 64px;
   }
 }
 .btn-primary[disabled] {

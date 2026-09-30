@@ -1,6 +1,7 @@
 import { memo, type CSSProperties } from 'react';
 import {
   artInfo,
+  CONTACT,
   heightOf,
   LAYOUTS,
   MONITOR_GLASS,
@@ -251,6 +252,27 @@ export const Scene = memo(function Scene({
       <img className="scene-bg" src="./assets/background.webp" alt="" draggable={false} />
       <div className="rain" aria-hidden="true" />
       <div className="lamp-glow" aria-hidden="true" />
+      <div className="contacts" aria-hidden="true">
+        {(Object.keys(CONTACT) as SlotId[]).map((id) => {
+          const slot = L[id];
+          const c = CONTACT[id]!;
+          if (!slot || hidden.has(id)) return null;
+          const w = slot.w * c.w;
+          const bottom = slot.y + heightOf(slot);
+          return (
+            <span
+              key={id}
+              className="contact"
+              style={{
+                left: `${((slot.x + (slot.w - w) / 2) / SCENE_W) * 100}%`,
+                top: `${((bottom + (c.dy ?? 0) * slot.w - (c.h * slot.w) / 2) / SCENE_H) * 100}%`,
+                width: `${(w / SCENE_W) * 100}%`,
+                height: `${((c.h * slot.w) / SCENE_H) * 100}%`,
+              }}
+            />
+          );
+        })}
+      </div>
 
       <Obj
         slot={s('corkboard')}
